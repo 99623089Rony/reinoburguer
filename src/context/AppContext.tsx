@@ -296,13 +296,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [audioUnlocked, setAudioUnlocked] = useState(false);
 
   // Unlock audio on first user interaction (required by browsers)
+  // Unlock audio on first user interaction (required by browsers)
   useEffect(() => {
+    if (view !== 'admin') return;
+
     const unlockAudio = () => {
       if (!audioUnlocked) {
-        // Play and immediately pause to unlock audio context
+        // Play silent/muted to unlock
+        audio.volume = 0;
         audio.play().then(() => {
           audio.pause();
           audio.currentTime = 0;
+          audio.volume = 1;
           setAudioUnlocked(true);
           console.log('🔊 Audio unlocked for notifications');
         }).catch(() => { });
@@ -318,7 +323,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       document.removeEventListener('touchstart', unlockAudio);
       document.removeEventListener('keydown', unlockAudio);
     };
-  }, [audio, audioUnlocked]);
+  }, [audio, audioUnlocked, view]);
 
   const playNotificationSound = useCallback(() => {
     try {
