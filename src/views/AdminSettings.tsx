@@ -176,9 +176,9 @@ export const AdminSettings: React.FC = () => {
             setSavedProfile(true);
             setProfileForm(prev => ({ ...prev, newPassword: '' })); // Clear password field
             setTimeout(() => setSavedProfile(false), 3000);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error updating profile:', error);
-            alert('Erro ao atualizar perfil. Tente novamente.');
+            alert(`Erro: ${error.message || 'Erro ao atualizar perfil'}`);
         } finally {
             setSavingProfile(false);
         }
