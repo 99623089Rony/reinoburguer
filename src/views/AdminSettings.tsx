@@ -685,6 +685,8 @@ export const AdminSettings: React.FC = () => {
                                     className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-3 text-white focus:border-indigo-500 outline-none transition-all"
                                     placeholder="Deixe em branco para manter a atual"
                                     minLength={6}
+                                    autoComplete="new-password"
+                                    autoCapitalize="none"
                                 />
                                 <p className="text-[10px] text-slate-500 ml-1">Mínimo de 6 caracteres.</p>
                             </div>
