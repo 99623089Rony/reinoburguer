@@ -336,7 +336,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if ('Notification' in window && Notification.permission === 'granted') {
         new Notification('🍔 Novo Pedido Chegou!', {
           body: 'Clique para abrir o painel.',
-          icon: '/vite.svg',
+          icon: '/burger-icon.png',
           requireInteraction: true
         }).onclick = () => {
           window.focus();
