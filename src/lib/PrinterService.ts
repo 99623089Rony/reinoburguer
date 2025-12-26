@@ -1,4 +1,4 @@
-import { Order } from '../../types';
+import { Order } from '../types';
 
 export class PrinterService {
     private static port: any | null = null;

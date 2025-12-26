@@ -3,6 +3,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { ArrowUpRight, TrendingUp, Users, ShoppingBag, CreditCard, Calendar, Package, ArrowDownRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { OrderStatus } from '../types';
+import { useApp } from '../context/AppContext';
 
 export const AdminReports: React.FC = () => {
   const { orders } = useApp();

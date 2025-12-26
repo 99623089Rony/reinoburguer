@@ -1,0 +1,5 @@
+src/components/AdminPlaceholder.tsx(7,63): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Object literal may only specify known properties, and 'size' does not exist in type 'Partial<unknown> & Attributes'.
+src/lib/PrinterService.ts(1,23): error TS2307: Cannot find module '../../types' or its corresponding type declarations.
+src/views/AdminReports.tsx(8,22): error TS2304: Cannot find name 'useApp'.
