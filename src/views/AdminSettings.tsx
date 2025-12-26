@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
+import { supabase } from '../lib/supabase';
 import { useImageUpload } from '../hooks/useImageUpload';
-import { Settings, Phone, Save, CheckCircle, LayoutGrid, Palette, Clock, Truck, MapPin, Plus, Trash2, Image, Upload, Loader2 } from 'lucide-react';
+import { Settings, Phone, Save, CheckCircle, LayoutGrid, Palette, Clock, Truck, MapPin, Plus, Trash2, Image, Upload, Loader2, User as UserIcon } from 'lucide-react';
 import { OpeningHour, DeliveryFee } from '../types';
 
 export const AdminSettings: React.FC = () => {
     const { storeConfig, updateStoreConfig, openingHours: dbOpeningHours, updateOpeningHour, deliveryFees: dbDeliveryFees, addDeliveryFee, updateDeliveryFee, deleteDeliveryFee } = useApp();
-    const [activeTab, setActiveTab] = useState<'general' | 'hours' | 'visual'>('general');
+    const [activeTab, setActiveTab] = useState<'general' | 'hours' | 'visual' | 'profile'>('general');
     const [whatsapp, setWhatsapp] = useState('');
     const [storeName, setStoreName] = useState('');
     const [pixKey, setPixKey] = useState('');
@@ -26,6 +27,25 @@ export const AdminSettings: React.FC = () => {
     const [savedHours, setSavedHours] = useState(false);
     const [savingFees, setSavingFees] = useState(false);
     const [savedFees, setSavedFees] = useState(false);
+
+    // Profile State
+    const [profileForm, setProfileForm] = useState({ name: '', email: '', newPassword: '' });
+    const [savingProfile, setSavingProfile] = useState(false);
+    const [savedProfile, setSavedProfile] = useState(false);
+
+    useEffect(() => {
+        const loadUser = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                setProfileForm(prev => ({
+                    ...prev,
+                    name: user.user_metadata.full_name || '',
+                    email: user.email || ''
+                }));
+            }
+        };
+        loadUser();
+    }, []);
 
     useEffect(() => {
         if (storeConfig) {
@@ -134,6 +154,36 @@ export const AdminSettings: React.FC = () => {
         }
     };
 
+    const handleSaveProfile = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setSavingProfile(true);
+        setSavedProfile(false);
+
+        try {
+            // Update profile data
+            const updates: any = {
+                data: { full_name: profileForm.name }
+            };
+
+            if (profileForm.newPassword) {
+                updates.password = profileForm.newPassword;
+            }
+
+            const { error } = await supabase.auth.updateUser(updates);
+
+            if (error) throw error;
+
+            setSavedProfile(true);
+            setProfileForm(prev => ({ ...prev, newPassword: '' })); // Clear password field
+            setTimeout(() => setSavedProfile(false), 3000);
+        } catch (error) {
+            console.error('Error updating profile:', error);
+            alert('Erro ao atualizar perfil. Tente novamente.');
+        } finally {
+            setSavingProfile(false);
+        }
+    };
+
     return (
         <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500 pb-20">
             {/* Tab Header */}
@@ -156,6 +206,12 @@ export const AdminSettings: React.FC = () => {
                         className={`px-6 py-2.5 rounded-xl text-sm font-black transition-all flex items-center gap-2 ${activeTab === 'visual' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40' : 'text-slate-500 hover:text-slate-300'}`}
                     >
                         <Palette size={18} /> Visual da Loja
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('profile')}
+                        className={`px-6 py-2.5 rounded-xl text-sm font-black transition-all flex items-center gap-2 ${activeTab === 'profile' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/40' : 'text-slate-500 hover:text-slate-300'}`}
+                    >
+                        <UserIcon size={18} /> Perfil
                     </button>
                 </div>
             </div>
@@ -576,6 +632,85 @@ export const AdminSettings: React.FC = () => {
                                     </>
                                 )}
                             </button>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {activeTab === 'profile' && (
+                <div className="max-w-xl mx-auto w-full space-y-8 animate-in slide-in-from-right-4 duration-500">
+                    <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl">
+                        <div className="flex items-center gap-3 mb-8">
+                            <div className="w-12 h-12 bg-indigo-600/20 rounded-2xl flex items-center justify-center text-indigo-500">
+                                <UserIcon size={28} />
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-black text-slate-100 uppercase tracking-tight">Meu Perfil</h3>
+                                <p className="text-slate-500 text-sm">Gerencie suas informações de acesso.</p>
+                            </div>
+                        </div>
+
+                        <form onSubmit={handleSaveProfile} className="space-y-6">
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-slate-400 uppercase ml-1">Email</label>
+                                <input
+                                    type="email"
+                                    value={profileForm.email}
+                                    disabled
+                                    className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-3 text-slate-500 cursor-not-allowed select-none"
+                                />
+                                <p className="text-[10px] text-slate-600 ml-1">O email não pode ser alterado.</p>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-slate-400 uppercase ml-1">Nome de Exibição</label>
+                                <input
+                                    type="text"
+                                    value={profileForm.name}
+                                    onChange={e => setProfileForm(p => ({ ...p, name: e.target.value }))}
+                                    className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-3 text-white focus:border-indigo-500 outline-none transition-all"
+                                    placeholder="Como você quer ser chamado"
+                                    required
+                                />
+                            </div>
+
+                            <hr className="border-slate-800/50" />
+
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-slate-400 uppercase ml-1">Nova Senha</label>
+                                <input
+                                    type="password"
+                                    value={profileForm.newPassword}
+                                    onChange={e => setProfileForm(p => ({ ...p, newPassword: e.target.value }))}
+                                    className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-3 text-white focus:border-indigo-500 outline-none transition-all"
+                                    placeholder="Deixe em branco para manter a atual"
+                                    minLength={6}
+                                />
+                                <p className="text-[10px] text-slate-500 ml-1">Mínimo de 6 caracteres.</p>
+                            </div>
+
+                            <div className="pt-4">
+                                <button
+                                    type="submit"
+                                    disabled={savingProfile}
+                                    className={`w-full py-4 rounded-2xl font-black text-lg transition-all flex items-center justify-center gap-3 shadow-xl ${savedProfile
+                                        ? 'bg-emerald-500 text-white shadow-emerald-900/20'
+                                        : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-900/20 active:scale-[0.98]'
+                                        }`}
+                                >
+                                    {savingProfile ? (
+                                        <span className="animate-pulse">Atualizando...</span>
+                                    ) : savedProfile ? (
+                                        <>
+                                            <CheckCircle size={24} /> Atualizado!
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Save size={24} /> Salvar Perfil
+                                        </>
+                                    )}
+                                </button>
+                            </div>
                         </form>
                     </div>
                 </div>
