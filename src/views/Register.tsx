@@ -19,15 +19,25 @@ export const Register: React.FC<{ onBackToLogin: () => void }> = ({ onBackToLogi
         setError(null);
 
         try {
-            // 1. Sign Up
+            // 1. Verificar se o email está autorizado ANTES de criar a conta
+            const { data: adminCheck, error: checkError } = await supabase
+                .from('admin_users')
+                .select('email')
+                .eq('email', email)
+                .single();
+
+            if (!adminCheck || checkError) {
+                throw new Error('Acesso Negado. Seu email não está autorizado a criar uma conta administrativa. Entre em contato com o administrador do sistema.');
+            }
+
+            // 2. Email autorizado - criar conta
             const { data, error: signUpError } = await supabase.auth.signUp({
                 email,
                 password,
                 options: {
-                    emailRedirectTo: 'http://localhost:3000',
+                    emailRedirectTo: window.location.origin,
                     data: {
                         full_name: fullName,
-                        is_admin: true // Store as metadata too, useful for triggers
                     }
                 }
             });
@@ -35,31 +45,15 @@ export const Register: React.FC<{ onBackToLogin: () => void }> = ({ onBackToLogi
             if (signUpError) throw signUpError;
             if (!data.user) throw new Error('Erro ao criar usuário.');
 
-            // Check if session exists (Auto-login successful) -> Supabase "Enable Email Confirmations" must be OFF
-            if (data.session) {
-                const { error: profileError } = await supabase
-                    .from('profiles')
-                    .insert([
-                        {
-                            id: data.user.id,
-                            full_name: fullName,
-                            is_admin: true,
-                        }
-                    ]);
+            // Supabase envia email de verificação automaticamente
+            setSuccess('Conta criada com sucesso! Verifique seu email para confirmar o acesso.');
+            setLoading(false);
+            return;
 
-                if (profileError) {
-                    console.error('Profile Creation Error:', profileError);
-                    throw new Error('Conta criada, mas erro ao salvar perfil: ' + profileError.message);
-                }
-            } else {
-                setSuccess('Conta criada! Verifique seu e-mail para ativar seu acesso no ' + (storeConfig?.name || 'Reino Burguer') + '.');
-                setLoading(false);
-                return;
-            }
         } catch (err: any) {
             let msg = err.message || 'Erro ao criar conta.';
             if (msg.includes('Failed to fetch')) {
-                msg = 'Erro de conexão (Failed to fetch). Verifique se suas chaves do Supabase no .env estão corretas e se o servidor está online.';
+                msg = 'Erro de conexão. Verifique sua internet e tente novamente.';
             }
             setError(msg);
         } finally {

@@ -35,12 +35,26 @@ export const Login: React.FC<{ onLoginSuccess: () => void; onRegisterClick: () =
         setError(null);
 
         try {
-            const { error } = await supabase.auth.signInWithPassword({
+            const { data, error } = await supabase.auth.signInWithPassword({
                 email,
                 password,
             });
 
             if (error) throw error;
+
+            // Verificar se o email está autorizado na tabela admin_users
+            const { data: adminCheck } = await supabase
+                .from('admin_users')
+                .select('email')
+                .eq('email', email)
+                .single();
+
+            if (!adminCheck) {
+                // Email não autorizado - fazer logout e mostrar erro
+                await supabase.auth.signOut();
+                throw new Error('Acesso Negado. Seu email não está autorizado a acessar o painel administrativo.');
+            }
+
             onLoginSuccess();
         } catch (err: any) {
             setError(err.message || 'Erro ao fazer login. Verifique suas credenciais.');

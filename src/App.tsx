@@ -35,31 +35,13 @@ const ViewManager: React.FC = () => {
   const [isRegistering, setIsRegistering] = useState(false);
 
   useEffect(() => {
-    // BYPASS AUTH: Forced Mock Session
-    setSession({
-      access_token: 'mock-token',
-      refresh_token: 'mock-refresh',
-      expires_in: 3600,
-      token_type: 'bearer',
-      user: {
-        id: 'mock-user-id',
-        aud: 'authenticated',
-        role: 'authenticated',
-        email: 'admin@reinoburguer.com',
-        email_confirmed_at: new Date().toISOString(),
-        phone: '',
-        confirmed_at: new Date().toISOString(),
-        last_sign_in_at: new Date().toISOString(),
-        app_metadata: { provider: 'email' },
-        user_metadata: { full_name: 'Admin Reino' },
-        identities: [],
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      }
-    });
+    // Check URL for admin parameter
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('admin') === 'true') {
+      setView('admin');
+    }
 
-    /* 
-    // Real Supabase Auth Logic - DISABLED
+    // Real Supabase Auth Logic
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
     });
@@ -71,8 +53,7 @@ const ViewManager: React.FC = () => {
     });
 
     return () => subscription.unsubscribe();
-    */
-  }, []);
+  }, [setView]);
 
   const toggleView = () => {
     setView(view === 'customer' ? 'admin' : 'customer');
