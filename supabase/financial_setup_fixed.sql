@@ -1,10 +1,10 @@
--- Financial Setup - SAFE VERSION
--- Este script pode ser executado múltiplas vezes sem erro
+-- Financial Setup - Versão Corrigida (Ignora se já existir)
+-- Execute este script no Supabase SQL Editor
 
--- Enable UUID extension
+-- Enable UUID extension if not already enabled
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- Create transactions table
+-- Create transactions table (só se não existir)
 CREATE TABLE IF NOT EXISTS public.transactions (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     type TEXT NOT NULL CHECK (type IN ('INCOME', 'EXPENSE')),
@@ -19,21 +19,24 @@ CREATE TABLE IF NOT EXISTS public.transactions (
 -- Enable RLS
 ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;
 
--- Drop and recreate policies (evita duplicação)
+-- Drop existing policies if they exist (para evitar erro de duplicação)
 DROP POLICY IF EXISTS "Enable all for authenticated users" ON public.transactions;
 DROP POLICY IF EXISTS "Enable read/write for all" ON public.transactions;
 
+-- Create policies
 CREATE POLICY "Enable all for authenticated users" ON public.transactions
     FOR ALL USING (true) WITH CHECK (true);
 
 CREATE POLICY "Enable read/write for all" ON public.transactions
     FOR ALL USING (true) WITH CHECK (true);
 
--- Enable Realtime (safe)
+-- Enable Realtime (ignora se já estiver adicionado)
 DO $$
 BEGIN
+    -- Tenta adicionar a tabela ao Realtime
     ALTER PUBLICATION supabase_realtime ADD TABLE public.transactions;
 EXCEPTION
     WHEN duplicate_object THEN
-        NULL; -- Ignora se já existir
+        -- Ignora se já estiver adicionado
+        RAISE NOTICE 'Table transactions already in supabase_realtime publication';
 END $$;

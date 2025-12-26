@@ -1,50 +1,56 @@
--- Enable Storage Extension (usually enabled by default, but good to ensure)
--- create extension if not exists "storage";
+-- Storage Setup - SAFE VERSION
+-- Este script pode ser executado múltiplas vezes sem erro
 
--- Create Buckets
-insert into storage.buckets (id, name, public)
-values ('products', 'products', true)
-on conflict (id) do nothing;
+-- Create Buckets (IF NOT EXISTS)
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('products', 'products', true)
+ON CONFLICT (id) DO NOTHING;
 
-insert into storage.buckets (id, name, public)
-values ('store-assets', 'store-assets', true)
-on conflict (id) do nothing;
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('store-assets', 'store-assets', true)
+ON CONFLICT (id) DO NOTHING;
+
+-- Drop existing policies to avoid duplicates
+DROP POLICY IF EXISTS "Public Access to Products" ON storage.objects;
+DROP POLICY IF EXISTS "Admin Insert Products" ON storage.objects;
+DROP POLICY IF EXISTS "Admin Update Products" ON storage.objects;
+DROP POLICY IF EXISTS "Admin Delete Products" ON storage.objects;
+
+DROP POLICY IF EXISTS "Public Access to Store Assets" ON storage.objects;
+DROP POLICY IF EXISTS "Admin Insert Store Assets" ON storage.objects;
+DROP POLICY IF EXISTS "Admin Update Store Assets" ON storage.objects;
+DROP POLICY IF EXISTS "Admin Delete Store Assets" ON storage.objects;
 
 -- Policies for 'products' bucket
--- Allow public read access
-create policy "Public Access to Products"
-  on storage.objects for select
-  using ( bucket_id = 'products' );
+CREATE POLICY "Public Access to Products"
+  ON storage.objects FOR SELECT
+  USING ( bucket_id = 'products' );
 
--- Allow authenticated users to upload/update/delete (Admins)
-create policy "Admin Insert Products"
-  on storage.objects for insert
-  with check ( bucket_id = 'products' and auth.role() = 'authenticated' );
+CREATE POLICY "Admin Insert Products"
+  ON storage.objects FOR INSERT
+  WITH CHECK ( bucket_id = 'products' AND auth.role() = 'authenticated' );
 
-create policy "Admin Update Products"
-  on storage.objects for update
-  using ( bucket_id = 'products' and auth.role() = 'authenticated' );
+CREATE POLICY "Admin Update Products"
+  ON storage.objects FOR UPDATE
+  USING ( bucket_id = 'products' AND auth.role() = 'authenticated' );
 
-create policy "Admin Delete Products"
-  on storage.objects for delete
-  using ( bucket_id = 'products' and auth.role() = 'authenticated' );
-
+CREATE POLICY "Admin Delete Products"
+  ON storage.objects FOR DELETE
+  USING ( bucket_id = 'products' AND auth.role() = 'authenticated' );
 
 -- Policies for 'store-assets' bucket
--- Allow public read access
-create policy "Public Access to Store Assets"
-  on storage.objects for select
-  using ( bucket_id = 'store-assets' );
+CREATE POLICY "Public Access to Store Assets"
+  ON storage.objects FOR SELECT
+  USING ( bucket_id = 'store-assets' );
 
--- Allow authenticated users to upload/update/delete (Admins)
-create policy "Admin Insert Store Assets"
-  on storage.objects for insert
-  with check ( bucket_id = 'store-assets' and auth.role() = 'authenticated' );
+CREATE POLICY "Admin Insert Store Assets"
+  ON storage.objects FOR INSERT
+  WITH CHECK ( bucket_id = 'store-assets' AND auth.role() = 'authenticated' );
 
-create policy "Admin Update Store Assets"
-  on storage.objects for update
-  using ( bucket_id = 'store-assets' and auth.role() = 'authenticated' );
+CREATE POLICY "Admin Update Store Assets"
+  ON storage.objects FOR UPDATE
+  USING ( bucket_id = 'store-assets' AND auth.role() = 'authenticated' );
 
-create policy "Admin Delete Store Assets"
-  on storage.objects for delete
-  using ( bucket_id = 'store-assets' and auth.role() = 'authenticated' );
+CREATE POLICY "Admin Delete Store Assets"
+  ON storage.objects FOR DELETE
+  USING ( bucket_id = 'store-assets' AND auth.role() = 'authenticated' );
