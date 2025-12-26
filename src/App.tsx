@@ -127,11 +127,6 @@ const ViewManager: React.FC = () => {
 
   return (
     <AdminLayout activeTab={adminTab} onTabChange={setAdminTab}>
-      <div className="fixed bottom-20 lg:bottom-4 right-4 z-50">
-        <button onClick={toggleView} className="bg-blue-600 text-white px-4 py-2 rounded-full text-xs font-bold shadow-xl border border-blue-400 hover:bg-blue-500 transition-all">
-          Customer View
-        </button>
-      </div>
 
       {adminTab === 'orders' && <AdminOrders />}
       {adminTab === 'reports' && <AdminReports />}

@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { ClipboardList, Utensils, Star, Ticket, BarChart3, Settings, LogIn, Printer, DollarSign, Users } from 'lucide-react';
+import { ClipboardList, Utensils, Star, Ticket, BarChart3, Settings, LogIn, Printer, DollarSign, Users, Store } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../context/AppContext';
 
@@ -12,6 +12,7 @@ export interface AdminMenuItem {
 
 export const ADMIN_MENU_ITEMS: AdminMenuItem[] = [
     { id: 'orders', label: 'Pedidos', icon: <ClipboardList size={20} /> },
+    { id: 'customer_view', label: 'Ver Loja', icon: <Store size={20} /> },
     { id: 'stock', label: 'Cardápio', icon: <Utensils size={20} /> },
     { id: 'printer', label: 'Impressora', icon: <Printer size={20} /> },
     { id: 'finance', label: 'Caixa', icon: <DollarSign size={20} /> },
@@ -44,17 +45,35 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ activeTab, onTabChan
             </div>
 
             <nav className="flex-1 px-4 py-4 space-y-1">
-                {ADMIN_MENU_ITEMS.map((item) => (
-                    <button
-                        key={item.id}
-                        onClick={() => onTabChange(item.id)}
-                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === item.id ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-100'
-                            }`}
-                    >
-                        {item.icon}
-                        <span className="font-medium">{item.label}</span>
-                    </button>
-                ))}
+                {ADMIN_MENU_ITEMS.map((item) => {
+                    if (item.id === 'customer_view') {
+                        return (
+                            <a
+                                key={item.id}
+                                href="/"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-slate-400 hover:bg-slate-800/50 hover:text-emerald-400 group"
+                            >
+                                <span className="text-slate-500 group-hover:text-emerald-400 transition-colors">
+                                    {item.icon}
+                                </span>
+                                <span className="font-medium group-hover:underline decoration-emerald-400/30 underline-offset-4">{item.label}</span>
+                            </a>
+                        );
+                    }
+                    return (
+                        <button
+                            key={item.id}
+                            onClick={() => onTabChange(item.id)}
+                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === item.id ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-100'
+                                }`}
+                        >
+                            {item.icon}
+                            <span className="font-medium">{item.label}</span>
+                        </button>
+                    );
+                })}
             </nav>
 
             <div className="p-4 border-t border-slate-800 space-y-2">
