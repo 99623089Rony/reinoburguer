@@ -238,7 +238,7 @@ export const PaymentPix: React.FC<PaymentPixProps> = ({ orderId, amount, onBack,
 
                     {/* QR Code */}
                     <div className="bg-white p-6 rounded-[2.5rem] relative overflow-hidden shadow-2xl shadow-orange-900/10">
-                        {paymentId.startsWith('MOCK') && (
+                        {paymentId && typeof paymentId === 'string' && paymentId.startsWith('MOCK') && (
                             <div className="absolute top-4 right-4 flex items-center gap-1.5 bg-blue-500 text-white px-3 py-1 rounded-full text-[10px] font-black shadow-lg shadow-blue-500/30">
                                 <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span> MODO TESTE
                             </div>
@@ -246,7 +246,7 @@ export const PaymentPix: React.FC<PaymentPixProps> = ({ orderId, amount, onBack,
                         <div className="border-4 border-slate-50 rounded-[2rem] p-2">
                             {qrCodeBase64 ? (
                                 <img
-                                    src={qrCodeBase64.startsWith('http') ? qrCodeBase64 : `data:image/png;base64,${qrCodeBase64}`}
+                                    src={(typeof qrCodeBase64 === 'string' && qrCodeBase64.startsWith('http')) ? qrCodeBase64 : `data:image/png;base64,${qrCodeBase64}`}
                                     alt="QR Code PIX"
                                     className="w-full h-auto rounded-[1.5rem]"
                                 />

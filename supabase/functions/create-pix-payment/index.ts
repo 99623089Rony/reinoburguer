@@ -100,9 +100,22 @@ Deno.serve(async (req) => {
             }
         }
 
+        // Validate response structure
+        if (!data.point_of_interaction?.transaction_data?.qr_code || !data.point_of_interaction?.transaction_data?.qr_code_base64) {
+            console.error('Mercado Pago response missing QR code data:', JSON.stringify(data, null, 2));
+            return new Response(
+                JSON.stringify({
+                    error: 'Resposta incompleta do Mercado Pago',
+                    details: 'QR Code não foi gerado. Verifique suas credenciais do Mercado Pago.',
+                    responseData: data
+                }),
+                { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+        }
+
         return new Response(
             JSON.stringify({
-                paymentId: data.id,
+                paymentId: String(data.id),
                 qrCode: data.point_of_interaction.transaction_data.qr_code,
                 qrCodeBase64: data.point_of_interaction.transaction_data.qr_code_base64,
                 status: data.status,

@@ -359,6 +359,9 @@ export const CustomerCheckout: React.FC<{
                     placeholder="Ex: Ana Silva"
                     className="w-full bg-white border border-gray-100 p-4 rounded-2xl shadow-sm focus:ring-2 focus:ring-orange-500 outline-none transition-all placeholder:text-gray-300"
                   />
+                  {name.length > 0 && name.trim().length < 3 && (
+                    <span className="text-[10px] text-red-500 ml-4 font-bold">Nome deve ter pelo menos 3 caracteres</span>
+                  )}
                 </div>
                 <div className="group">
                   <label className="text-[10px] font-bold text-gray-400 uppercase ml-4 mb-1 block">Telefone</label>
@@ -391,6 +394,9 @@ export const CustomerCheckout: React.FC<{
                     placeholder="Digite o logradouro"
                     className="w-full bg-white border border-gray-100 p-4 rounded-2xl shadow-sm focus:ring-2 focus:ring-orange-500 outline-none transition-all placeholder:text-gray-300"
                   />
+                  {street.length > 0 && street.trim().length < 3 && (
+                    <span className="text-[10px] text-red-500 ml-4 font-bold">Endereço deve ter pelo menos 3 caracteres</span>
+                  )}
                 </div>
                 <div className="col-span-4 group">
                   <label className="text-[10px] font-bold text-gray-400 uppercase ml-4 mb-1 block">Número</label>
