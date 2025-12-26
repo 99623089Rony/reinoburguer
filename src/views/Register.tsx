@@ -17,43 +17,64 @@ export const Register: React.FC<{ onBackToLogin: () => void }> = ({ onBackToLogi
         e.preventDefault();
         setLoading(true);
         setError(null);
+        setSuccess(null);
 
         try {
-            // 1. Verificar se o email está autorizado ANTES de criar a conta
-            const { data: adminCheck, error: checkError } = await supabase
+            // 1. Verificar se o email já está na lista de admin
+            const { data: adminCheck } = await supabase
                 .from('admin_users')
                 .select('email')
                 .eq('email', email)
-                .single();
+                .maybeSingle();
 
-            if (!adminCheck || checkError) {
-                throw new Error('Acesso Negado. Seu email não está autorizado a criar uma conta administrativa. Entre em contato com o administrador do sistema.');
+            if (adminCheck) {
+                // EMAIL CAMPEÃO : Está n lista VIP -> Criar conta direto
+                const { data, error: signUpError } = await supabase.auth.signUp({
+                    email,
+                    password,
+                    options: {
+                        data: {
+                            full_name: fullName,
+                        }
+                    }
+                });
+
+                if (signUpError) throw signUpError;
+                if (!data.user) throw new Error('Erro ao criar usuário.');
+
+                setSuccess('Conta criada com sucesso! Você já pode fazer login.');
+            } else {
+                // EMAIL COMUM : Não está na lista -> Criar solicitação de acesso
+
+                // Primeiro verifique se já não pediu antes
+                const { data: existingRequest } = await supabase
+                    .from('admin_access_requests')
+                    .select('status')
+                    .eq('email', email)
+                    .eq('status', 'pending')
+                    .maybeSingle();
+
+                if (existingRequest) {
+                    throw new Error('Já existe uma solicitação pendente para este email. Aguarde a aprovação do administrador.');
+                }
+
+                const { error: requestError } = await supabase
+                    .from('admin_access_requests')
+                    .insert([{
+                        email,
+                        name: fullName,
+                        status: 'pending'
+                    }]);
+
+                if (requestError) throw requestError;
+
+                setSuccess('Sua solicitação de acesso foi enviada para o administrador (Ronilson). Aguarde a liberação para fazer login.');
             }
 
-            // 2. Email autorizado - criar conta
-            const { data, error: signUpError } = await supabase.auth.signUp({
-                email,
-                password,
-                options: {
-                    emailRedirectTo: window.location.origin,
-                    data: {
-                        full_name: fullName,
-                    }
-                }
-            });
-
-            if (signUpError) throw signUpError;
-            if (!data.user) throw new Error('Erro ao criar usuário.');
-
-            // Supabase envia email de verificação automaticamente
-            setSuccess('Conta criada com sucesso! Verifique seu email para confirmar o acesso.');
-            setLoading(false);
-            return;
-
         } catch (err: any) {
-            let msg = err.message || 'Erro ao criar conta.';
-            if (msg.includes('Failed to fetch')) {
-                msg = 'Erro de conexão. Verifique sua internet e tente novamente.';
+            let msg = err.message || 'Erro ao processar solicitação.';
+            if (msg.includes('already registered')) {
+                msg = 'Este email já possui uma conta. Tente fazer login ou recupere a senha.';
             }
             setError(msg);
         } finally {

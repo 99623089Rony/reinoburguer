@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { ClipboardList, Utensils, Star, Ticket, BarChart3, Settings, LogIn, Printer, DollarSign } from 'lucide-react';
+import { ClipboardList, Utensils, Star, Ticket, BarChart3, Settings, LogIn, Printer, DollarSign, Users } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../context/AppContext';
 
@@ -17,6 +17,7 @@ export const ADMIN_MENU_ITEMS: AdminMenuItem[] = [
     { id: 'finance', label: 'Caixa', icon: <DollarSign size={20} /> },
     { id: 'loyalty', label: 'Fidelidade', icon: <Star size={20} /> },
     { id: 'coupons', label: 'Cupons', icon: <Ticket size={20} /> },
+    { id: 'team', label: 'Equipe', icon: <Users size={20} /> },
     { id: 'reports', label: 'Relatórios', icon: <BarChart3 size={20} /> },
     { id: 'settings', label: 'Configurações', icon: <Settings size={20} /> },
 ];

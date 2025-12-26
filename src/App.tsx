@@ -20,7 +20,7 @@ import { PaymentPix } from './views/PaymentPix';
 import { CustomerProfile } from './views/CustomerProfile';
 import { AdminRewards } from './views/AdminRewards';
 import { AdminFinance } from './views/AdminFinance';
-import { AdminPlaceholder } from './components/AdminPlaceholder';
+import { AdminTeam } from './views/AdminTeam';
 import { Search, User, Utensils, Ticket, Settings, ClipboardList, Printer, MapPin } from 'lucide-react';
 import { supabase } from './lib/supabase';
 import { Session } from '@supabase/supabase-js';
@@ -140,6 +140,7 @@ const ViewManager: React.FC = () => {
       {adminTab === 'coupons' && <AdminRewards />}
       {adminTab === 'printer' && <AdminPrinter />}
       {adminTab === 'finance' && <AdminFinance />}
+      {adminTab === 'team' && <AdminTeam />}
       {adminTab === 'settings' && <AdminSettings />}
     </AdminLayout>
   );
