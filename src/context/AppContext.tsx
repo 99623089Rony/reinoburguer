@@ -145,11 +145,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const fetchTransactions = useCallback(async () => {
     // Fetch transactions for the last 24 hours
-    const yesterday = new Date();
-    yesterday.setHours(yesterday.getHours() - 24);
     const { data } = await supabase.from('transactions')
       .select('*')
-      .gte('created_at', yesterday.toISOString())
       .order('created_at', { ascending: false });
 
     if (data) {
@@ -430,8 +427,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   useEffect(() => {
     setLoading(true);
-    Promise.all([fetchProducts(), fetchOrders(), fetchCategories(), fetchStoreConfig(), fetchExtrasGroups(), fetchOpeningHours(), fetchDeliveryFees(), fetchCustomers(), fetchProductExtras(), fetchRewards(), fetchMyCoupons()]).then(() => setLoading(false));
-  }, [fetchProducts, fetchOrders, fetchCategories, fetchStoreConfig, fetchExtrasGroups, fetchOpeningHours, fetchDeliveryFees, fetchCustomers, fetchProductExtras, fetchRewards, fetchMyCoupons]);
+    Promise.all([fetchProducts(), fetchOrders(), fetchCategories(), fetchStoreConfig(), fetchExtrasGroups(), fetchOpeningHours(), fetchDeliveryFees(), fetchCustomers(), fetchProductExtras(), fetchRewards(), fetchMyCoupons(), fetchTransactions()]).then(() => setLoading(false));
+  }, [fetchProducts, fetchOrders, fetchCategories, fetchStoreConfig, fetchExtrasGroups, fetchOpeningHours, fetchDeliveryFees, fetchCustomers, fetchProductExtras, fetchRewards, fetchMyCoupons, fetchTransactions]);
 
   useEffect(() => {
     console.log('📡 Setting up Realtime subscription...');
@@ -471,6 +468,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       .on('postgres_changes', { event: '*', schema: 'public', table: 'store_config' }, (p) => { console.log('📥 Realtime STORE_CONFIG event:', p.eventType); fetchStoreConfig(); })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'rewards' }, fetchRewards)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'coupons' }, fetchMyCoupons)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, (p) => { console.log('📥 Realtime TRANSACTIONS event:', p.eventType); fetchTransactions(); })
       .subscribe((status) => {
         console.log('📡 Realtime subscription status:', status);
       });
