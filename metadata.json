@@ -1,0 +1,7 @@
+{
+  "name": "ReinoBurguer - Full Delivery & Management System",
+  "description": "A comprehensive food delivery application featuring a customer-facing storefront and a robust admin dashboard for order tracking, stock management, performance reports, and customer loyalty programs.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}

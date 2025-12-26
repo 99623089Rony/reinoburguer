@@ -1,0 +1,10 @@
+{
+    "deno.enable": false,
+    "deno.enablePaths": [
+        "supabase/functions"
+    ],
+    "deno.lint": true,
+    "deno.suggest.imports.hosts": {
+        "https://deno.land": true
+    }
+}
