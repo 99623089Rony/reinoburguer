@@ -234,8 +234,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, []);
 
   const fetchOrders = useCallback(async () => {
-    const { data, error } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
-    console.log('📦 fetchOrders result:', { data, error });
+    let query = supabase.from('orders').select('*').order('created_at', { ascending: false });
+
+    // SECURITY: Only fetch user's orders if in customer view
+    if (view === 'customer') {
+      if (!customerProfile?.phone) {
+        setOrders([]); // No phone = no orders
+        return;
+      }
+      // Normalize phone for query
+      // Assuming DB stores raw or formatted, let's try to match exact first
+      // Ideally we should store normalized, but we rely on exact match for now
+      query = query.eq('phone', customerProfile.phone);
+    }
+
+    // Admin View gets everything
+    const { data, error } = await query;
+
+    console.log(`📦 fetchOrders [${view}] result:`, { count: data?.length || 0, error });
+
     if (error) {
       console.error('❌ fetchOrders error:', error);
       return;
@@ -250,7 +267,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         rewardTitle: o.reward_title
       })));
     }
-  }, []);
+  }, [view, customerProfile?.phone]);
 
   const fetchCategories = useCallback(async () => {
     const { data, error } = await supabase.from('categories').select('*').order('sort_order');
@@ -444,8 +461,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   useEffect(() => {
     setLoading(true);
+    // Add view to dependencies to refetch when switching modes
     Promise.all([fetchProducts(), fetchOrders(), fetchCategories(), fetchStoreConfig(), fetchExtrasGroups(), fetchOpeningHours(), fetchDeliveryFees(), fetchCustomers(), fetchProductExtras(), fetchRewards(), fetchMyCoupons(), fetchTransactions()]).then(() => setLoading(false));
-  }, [fetchProducts, fetchOrders, fetchCategories, fetchStoreConfig, fetchExtrasGroups, fetchOpeningHours, fetchDeliveryFees, fetchCustomers, fetchProductExtras, fetchRewards, fetchMyCoupons, fetchTransactions]);
+  }, [view, fetchProducts, fetchOrders, fetchCategories, fetchStoreConfig, fetchExtrasGroups, fetchOpeningHours, fetchDeliveryFees, fetchCustomers, fetchProductExtras, fetchRewards, fetchMyCoupons, fetchTransactions]);
 
   useEffect(() => {
     console.log('📡 Setting up Realtime subscription...');
