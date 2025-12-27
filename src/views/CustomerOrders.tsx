@@ -38,10 +38,20 @@ const OrderTimer: React.FC<{ timestamp: Date; onExpired: () => void }> = ({ time
 };
 
 export const CustomerOrders: React.FC = () => {
-    const { orders, openPayment, deleteOrder } = useApp();
-    // Filter by simulated user phone or just show all for demo
-    // For this demo, we can show the most recent orders since we don't have real user auth on customer side yet
-    const myOrders = orders.slice(0, 5); // Show last 5 orders
+    const { orders, openPayment, deleteOrder, customerProfile } = useApp();
+
+    // Filter orders by the current customer's phone number
+    const myOrders = React.useMemo(() => {
+        if (!customerProfile?.phone) return [];
+
+        // Normalize phone for comparison
+        const myPhone = customerProfile.phone.replace(/\D/g, '');
+
+        return orders.filter(order => {
+            const orderPhone = (order.phone || '').replace(/\D/g, '');
+            return orderPhone === myPhone;
+        });
+    }, [orders, customerProfile]);
 
     const getStatusIcon = (status: OrderStatus) => {
         switch (status) {
