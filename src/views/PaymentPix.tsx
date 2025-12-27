@@ -96,6 +96,12 @@ export const PaymentPix: React.FC<PaymentPixProps> = ({ orderId, amount, onBack,
             if (error) throw error;
 
             if (data.payment_status === 'paid') {
+                // Force update status to PENDING so admin notification plays
+                await supabase
+                    .from('orders')
+                    .update({ status: OrderStatus.PENDING })
+                    .eq('id', orderId);
+
                 setPaymentStatus('paid');
                 setTimeout(() => onSuccess(), 2000);
             }
