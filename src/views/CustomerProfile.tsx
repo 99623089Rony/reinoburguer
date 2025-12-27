@@ -3,7 +3,7 @@ import { User, Phone, MapPin, Award, Save, Check, Ticket, Tag, Package } from 'l
 import { useApp } from '../context/AppContext';
 
 export const CustomerProfile: React.FC = () => {
-    const { customerProfile, updateCustomerProfile, rewards, myCoupons, redeemReward, customers, products, addToCart, setCustomerTab, setShowCheckout, setPrefillCoupon } = useApp();
+    const { customerProfile, updateCustomerProfile, rewards, myCoupons, redeemReward, customers, products, addToCart, setCustomerTab, setShowCheckout, setPrefillCoupon, loginCustomer } = useApp();
 
     // Controlled form state
     const [formData, setFormData] = useState({
@@ -14,6 +14,8 @@ export const CustomerProfile: React.FC = () => {
 
     const [isEditing, setIsEditing] = useState(false);
     const [isSaved, setIsSaved] = useState(false);
+    const [isRecovering, setIsRecovering] = useState(false);
+    const [recoveryPhone, setRecoveryPhone] = useState('');
 
     // Sync form with profile when NOT editing
     useEffect(() => {
@@ -89,18 +91,71 @@ export const CustomerProfile: React.FC = () => {
                     <h3 className="text-slate-900 font-black text-lg flex items-center gap-2">
                         <User size={20} className="text-orange-500" /> Seus Dados
                     </h3>
-                    {!isEditing && (
-                        <button
-                            onClick={() => setIsEditing(true)}
-                            className="text-[10px] font-bold text-orange-600 uppercase bg-orange-100 px-3 py-1.5 rounded-lg active:scale-95 transition-all"
-                        >
-                            Alterar
-                        </button>
+                    {!isEditing && !isRecovering && (
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => setIsRecovering(true)}
+                                className="text-[10px] font-bold text-slate-500 uppercase bg-slate-100 px-3 py-1.5 rounded-lg active:scale-95 transition-all"
+                            >
+                                Recuperar Conta
+                            </button>
+                            <button
+                                onClick={() => setIsEditing(true)}
+                                className="text-[10px] font-bold text-orange-600 uppercase bg-orange-100 px-3 py-1.5 rounded-lg active:scale-95 transition-all"
+                            >
+                                Alterar
+                            </button>
+                        </div>
                     )}
                 </div>
 
                 <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-gray-100">
-                    {isEditing ? (
+                    {isRecovering ? (
+                        <div className="space-y-5">
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold text-gray-400 uppercase ml-2">Seu WhatsApp</label>
+                                <input
+                                    type="text"
+                                    value={recoveryPhone}
+                                    onChange={e => {
+                                        let v = e.target.value.replace(/\D/g, '');
+                                        if (v.length > 11) v = v.slice(0, 11);
+                                        if (v.length > 2) v = `(${v.slice(0, 2)}) ${v.slice(2)}`;
+                                        if (v.length > 9) v = `${v.slice(0, 10)}-${v.slice(10)}`;
+                                        setRecoveryPhone(v);
+                                    }}
+                                    placeholder="(00) 00000-0000"
+                                    maxLength={15}
+                                    className="w-full bg-gray-50 border border-transparent p-4 rounded-2xl focus:ring-2 focus:ring-orange-500 focus:bg-white outline-none transition-all placeholder:text-gray-300"
+                                />
+                                <p className="text-[10px] text-slate-400 ml-2">Digite o número usado em pedidos anteriores para recuperar seus pontos e histórico.</p>
+                            </div>
+                            <button
+                                onClick={async () => {
+                                    if (!recoveryPhone || recoveryPhone.length < 14) return alert('Digite um telefone válido.');
+                                    const success = await loginCustomer(recoveryPhone);
+                                    if (success) {
+                                        setIsRecovering(false);
+                                        setRecoveryPhone('');
+                                        setIsSaved(true);
+                                        setTimeout(() => setIsSaved(false), 3000);
+                                    } else {
+                                        alert('😕 Cadastro não encontrado.\n\nVerifique o número ou faça seu primeiro pedido para criar sua conta.');
+                                    }
+                                }}
+                                disabled={!recoveryPhone}
+                                className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-all mt-4 disabled:opacity-50"
+                            >
+                                <User size={20} /> Recuperar Meus Dados
+                            </button>
+                            <button
+                                onClick={() => setIsRecovering(false)}
+                                className="w-full text-slate-400 py-2 text-[10px] font-bold uppercase tracking-widest"
+                            >
+                                Cancelar
+                            </button>
+                        </div>
+                    ) : isEditing ? (
                         <div className="space-y-5">
                             <div className="space-y-1.5">
                                 <label className="text-[10px] font-bold text-gray-400 uppercase ml-2">Nome Completo</label>

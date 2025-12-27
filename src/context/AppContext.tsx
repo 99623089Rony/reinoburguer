@@ -72,6 +72,7 @@ interface AppContextType {
   paymentData: { orderId: string; amount: number; createdAt: Date } | null;
   openPayment: (orderId: string, amount: number, createdAt: Date) => void;
   closePayment: () => void;
+  loginCustomer: (phone: string) => Promise<boolean>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -134,6 +135,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     }
   }, [customerProfile, fetchCustomers]);
+
+
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [storeConfig, setStoreConfig] = useState<StoreConfig | null>(null);
@@ -221,6 +224,44 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       } : undefined
     })));
   }, [customerProfile?.phone]);
+
+  const loginCustomer = useCallback(async (phone: string) => {
+    const { data, error } = await supabase.from('customers').select('*').eq('phone', phone).maybeSingle();
+
+    if (data) {
+      console.log('✅ Customer found:', data);
+      const profile = {
+        id: data.id,
+        name: data.name,
+        phone: data.phone,
+        address: data.address,
+        points: data.points,
+        pointsMonthly: data.points_monthly
+      };
+      setCustomerProfile(profile);
+      localStorage.setItem('reino_burguer_profile', JSON.stringify(profile));
+      // We need to wait for state update to trigger fetchOrders via useEffect or call it manually with new profile
+      // Since fetchOrders depends on customerProfile state, calling it here might use OLD state.
+      // However, we just called setCustomerProfile. React batching...
+      // Better to rely on useEffect [customerProfile] to trigger fetchOrders? 
+      // Current existing useEffect (line 466) triggers on view change/mounting.
+      // Let's manually trigger fetchOrders BUT we need to pass the phone since state isn't updated yet?
+      // Actually fetchOrders uses customerProfile from closure? No, it uses dependency.
+
+      // Simpler: Just reload the page? No.
+      // We can pass the phone directly to a specialized fetch or just wait.
+      // For now, let's just let the user see the success message.
+      // Actually, lines 270 (fetchOrders) depends on [customerProfile?.phone]. 
+      // So `setCustomerProfile` will trigger a re-render, which *should* re-create `fetchOrders`, 
+      // BUT `useEffect` calling `fetchOrders` only runs on `view` change or other big deps.
+      // Wait, line 466: `[view, fetchProducts, fetchOrders...]`. 
+      // If `fetchOrders` changes (because `customerProfile` changed), `useEffect` runs!
+      // So it should be automatic.
+      return true;
+    }
+    return false;
+  }, []); // Remove dependencies to avoid circular logic if possible, or leave empty if relying on auto-trigger
+
 
   const fetchProducts = useCallback(async () => {
     const { data, error } = await supabase.from('products').select('*').order('name');
@@ -732,7 +773,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       customerTab, setCustomerTab,
       showCheckout, setShowCheckout,
       prefillCoupon, setPrefillCoupon,
-      paymentData, openPayment, closePayment
+      paymentData, openPayment, closePayment,
+      loginCustomer
     }}>
       {children}
     </AppContext.Provider>
