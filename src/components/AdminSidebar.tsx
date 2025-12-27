@@ -36,7 +36,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ activeTab, onTabChan
     };
 
     return (
-        <aside className="w-64 border-r border-slate-800 flex flex-col hidden lg:flex">
+        <aside className="w-64 h-screen border-r border-slate-800 flex flex-col hidden lg:flex sticky top-0">
             <div className="p-6 flex items-center gap-3">
                 <div className="w-8 h-8 bg-orange-600 rounded-lg flex items-center justify-center">
                     <span className="font-bold text-white">{(storeConfig?.name || 'R')[0]}</span>
@@ -44,7 +44,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ activeTab, onTabChan
                 <h1 className="text-xl font-bold tracking-tight">{storeConfig?.name || 'Reino Burguer'}</h1>
             </div>
 
-            <nav className="flex-1 px-4 py-4 space-y-1">
+            <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
                 {ADMIN_MENU_ITEMS.map((item) => {
                     if (item.id === 'customer_view') {
                         return (
@@ -76,7 +76,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ activeTab, onTabChan
                 })}
             </nav>
 
-            <div className="p-4 border-t border-slate-800 space-y-2">
+            <div className="p-4 border-t border-slate-800 space-y-2 flex-shrink-0">
                 <button
                     onClick={async () => {
                         if ('Notification' in window) {
