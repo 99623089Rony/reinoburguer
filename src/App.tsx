@@ -26,11 +26,9 @@ import { supabase } from './lib/supabase';
 import { Session } from '@supabase/supabase-js';
 
 const ViewManager: React.FC = () => {
-  const { view, setView, customerTab, setCustomerTab, showCheckout, setShowCheckout } = useApp();
+  const { view, setView, customerTab, setCustomerTab, showCheckout, setShowCheckout, paymentData, closePayment, openPayment } = useApp();
   const [adminTab, setAdminTab] = useState('orders');
   const [showSuccess, setShowSuccess] = useState(false);
-  const [showPaymentPix, setShowPaymentPix] = useState(false);
-  const [pixPaymentData, setPixPaymentData] = useState<{ orderId: string; amount: number } | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isRegistering, setIsRegistering] = useState(false);
 
@@ -60,19 +58,17 @@ const ViewManager: React.FC = () => {
   };
 
   if (view === 'customer') {
-    if (showPaymentPix && pixPaymentData) {
+    if (paymentData) {
       return (
         <PaymentPix
-          orderId={pixPaymentData.orderId}
-          amount={pixPaymentData.amount}
+          orderId={paymentData.orderId}
+          amount={paymentData.amount}
           onBack={() => {
-            setShowPaymentPix(false);
-            setPixPaymentData(null);
+            closePayment();
             setShowCheckout(false);
           }}
           onSuccess={() => {
-            setShowPaymentPix(false);
-            setPixPaymentData(null);
+            closePayment();
             setShowSuccess(true);
           }}
         />
@@ -92,8 +88,7 @@ const ViewManager: React.FC = () => {
           onBack={() => setShowCheckout(false)}
           onSuccess={() => setShowSuccess(true)}
           onPixPayment={(orderId, amount) => {
-            setPixPaymentData({ orderId, amount });
-            setShowPaymentPix(true);
+            openPayment(orderId, amount);
           }}
         />
       );

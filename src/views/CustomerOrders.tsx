@@ -5,7 +5,7 @@ import { Clock, CheckCircle, Package, Truck, Phone, MapPin } from 'lucide-react'
 import { OrderStatus } from '../types';
 
 export const CustomerOrders: React.FC = () => {
-    const { orders } = useApp();
+    const { orders, openPayment } = useApp();
     // Filter by simulated user phone or just show all for demo
     // For this demo, we can show the most recent orders since we don't have real user auth on customer side yet
     const myOrders = orders.slice(0, 5); // Show last 5 orders
@@ -56,6 +56,22 @@ export const CustomerOrders: React.FC = () => {
                                     <span className="text-xs font-bold text-slate-700">{getStatusText(order.status)}</span>
                                 </div>
                             </div>
+
+                            {/* Actions for Awaiting Payment */}
+                            {order.status === OrderStatus.AWAITING_PAYMENT && (
+                                <div className="bg-orange-50 rounded-xl p-4 border border-orange-100 flex items-center justify-between mb-2">
+                                    <div className="text-xs text-orange-800">
+                                        <p className="font-bold">Pagamento Pendente</p>
+                                        <p>Finalize para receber seu pedido.</p>
+                                    </div>
+                                    <button
+                                        onClick={() => openPayment(order.id, order.total)}
+                                        className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-xs font-bold shadow-md shadow-orange-500/20 active:scale-95 transition-all"
+                                    >
+                                        Pagar Agora
+                                    </button>
+                                </div>
+                            )}
 
                             {/* Progress Bar */}
                             <div className="relative pt-2">
