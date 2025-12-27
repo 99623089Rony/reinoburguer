@@ -1,11 +1,44 @@
 
 import React from 'react';
 import { useApp } from '../context/AppContext';
-import { Clock, CheckCircle, Package, Truck, Phone, MapPin } from 'lucide-react';
+import { Trash2, Clock, CheckCircle, Package, Truck } from 'lucide-react';
 import { OrderStatus } from '../types';
 
+const OrderTimer: React.FC<{ timestamp: Date; onExpired: () => void }> = ({ timestamp, onExpired }) => {
+    const [timeLeft, setTimeLeft] = React.useState(() => {
+        const now = new Date();
+        const diffSeconds = Math.floor((now.getTime() - timestamp.getTime()) / 1000);
+        const remaining = 600 - diffSeconds;
+        return remaining > 0 ? remaining : 0;
+    });
+
+    React.useEffect(() => {
+        if (timeLeft <= 0) {
+            onExpired();
+            return;
+        }
+        const timer = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
+        return () => clearInterval(timer);
+    }, [timeLeft, onExpired]);
+
+    const formatTime = (seconds: number) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    };
+
+    if (timeLeft <= 0) return <span className="text-red-500 font-bold text-xs bg-red-50 px-2 py-1 rounded-md border border-red-100">Expirado</span>;
+
+    return (
+        <div className="flex items-center gap-1 text-orange-600 font-bold bg-orange-100 px-2 py-1 rounded-md border border-orange-200 text-xs">
+            <Clock size={12} />
+            <span>{formatTime(timeLeft)}</span>
+        </div>
+    );
+};
+
 export const CustomerOrders: React.FC = () => {
-    const { orders, openPayment } = useApp();
+    const { orders, openPayment, deleteOrder } = useApp();
     // Filter by simulated user phone or just show all for demo
     // For this demo, we can show the most recent orders since we don't have real user auth on customer side yet
     const myOrders = orders.slice(0, 5); // Show last 5 orders
@@ -49,7 +82,17 @@ export const CustomerOrders: React.FC = () => {
                             <div className="flex items-center justify-between border-b border-gray-50 pb-4">
                                 <div>
                                     <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Pedido #{order.id.slice(0, 6)}</span>
-                                    <p className="text-xs text-gray-400">{order.timestamp.toLocaleTimeString().slice(0, 5)}</p>
+                                    <div className="flex items-center gap-2">
+                                        <p className="text-xs text-gray-400">{order.timestamp.toLocaleTimeString().slice(0, 5)}</p>
+                                        {order.status === OrderStatus.AWAITING_PAYMENT && (
+                                            <OrderTimer
+                                                timestamp={order.timestamp}
+                                                onExpired={() => {
+                                                    // Optional: auto-delete or just show expired
+                                                }}
+                                            />
+                                        )}
+                                    </div>
                                 </div>
                                 <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-full border border-gray-100">
                                     {getStatusIcon(order.status)}
@@ -64,12 +107,25 @@ export const CustomerOrders: React.FC = () => {
                                         <p className="font-bold">Pagamento Pendente</p>
                                         <p>Finalize para receber seu pedido.</p>
                                     </div>
-                                    <button
-                                        onClick={() => openPayment(order.id, order.total)}
-                                        className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-xs font-bold shadow-md shadow-orange-500/20 active:scale-95 transition-all"
-                                    >
-                                        Pagar Agora
-                                    </button>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={async () => {
+                                                if (window.confirm('Tem certeza que deseja cancelar este pedido?')) {
+                                                    await deleteOrder(order.id);
+                                                }
+                                            }}
+                                            className="bg-red-50 hover:bg-red-100 text-red-500 p-2 rounded-lg transition-colors border border-red-100"
+                                            title="Cancelar Pedido"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                        <button
+                                            onClick={() => openPayment(order.id, order.total, order.timestamp)}
+                                            className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-xs font-bold shadow-md shadow-orange-500/20 active:scale-95 transition-all"
+                                        >
+                                            Pagar Agora
+                                        </button>
+                                    </div>
                                 </div>
                             )}
 
