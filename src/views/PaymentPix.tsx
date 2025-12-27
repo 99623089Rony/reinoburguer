@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Copy, CheckCircle, Clock, QrCode, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Copy, CheckCircle, Clock, QrCode } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../context/AppContext';
 import { OrderStatus } from '../types';
@@ -19,7 +19,7 @@ export const PaymentPix: React.FC<PaymentPixProps> = ({ orderId, amount, created
     const [pixCode, setPixCode] = useState('');
     const [paymentId, setPaymentId] = useState('');
     const [loading, setLoading] = useState(true);
-    const [confirming, setConfirming] = useState(false);
+
     const [copied, setCopied] = useState(false);
 
     // Calculate initial time left based on createdAt
@@ -125,42 +125,7 @@ export const PaymentPix: React.FC<PaymentPixProps> = ({ orderId, amount, created
         }
     };
 
-    const handleManualPaymentConfirmation = async () => {
-        setConfirming(true);
-        try {
-            // In simulation (localhost), we force the payment status to 'paid'
-            // Force real verification even on localhost
-            if (false) { // Disabled mock check
-                const { error } = await supabase
-                    .from('orders')
-                    .update({
-                        payment_status: 'paid',
-                        status: OrderStatus.PENDING // Move to PENDING so admin gets notified as "New Order"
-                    })
-                    .eq('id', orderId);
 
-                if (error) throw error;
-
-                setPaymentStatus('paid');
-                setTimeout(() => onSuccess(), 1500);
-            } else {
-                // In production, we just trigger a check and show a message
-                await checkPaymentStatus();
-                if (paymentStatus === 'pending') {
-                    alert('Seu pagamento ainda está sendo processado. Isso pode levar até 1 minuto. Se preferir, envie o comprovante pelo WhatsApp.');
-                    if (storeConfig?.whatsapp) {
-                        const message = `Olá! Acabei de realizar o pagamento PIX do meu pedido #${orderId.slice(-5).toUpperCase()}. Pode conferir?`;
-                        window.open(`https://api.whatsapp.com/send?phone=${storeConfig.whatsapp}&text=${encodeURIComponent(message)}`, '_blank');
-                    }
-                }
-            }
-        } catch (error) {
-            console.error('Error confirming payment:', error);
-            alert('Erro ao confirmar pagamento. Tente novamente.');
-        } finally {
-            setConfirming(false);
-        }
-    };
 
     const copyPixCode = () => {
         navigator.clipboard.writeText(pixCode);
@@ -318,27 +283,6 @@ export const PaymentPix: React.FC<PaymentPixProps> = ({ orderId, amount, created
                         </button>
                     </div>
 
-                    {/* Manual Confirmation */}
-                    <button
-                        onClick={handleManualPaymentConfirmation}
-                        disabled={confirming}
-                        className="w-full bg-slate-900 hover:bg-slate-800 border border-slate-800 p-5 rounded-3xl flex items-center justify-between group transition-all active:scale-[0.98] disabled:opacity-50"
-                    >
-                        <div className="flex items-center gap-4 text-left">
-                            <div className="w-12 h-12 rounded-2xl bg-orange-600/10 flex items-center justify-center text-orange-500 group-hover:bg-orange-500 group-hover:text-white transition-colors">
-                                <ExternalLink size={24} />
-                            </div>
-                            <div>
-                                <p className="text-sm font-black text-white leading-tight">Já fiz o pagamento</p>
-                                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tight">Liberar meu pedido agora</p>
-                            </div>
-                        </div>
-                        {confirming ? (
-                            <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
-                        ) : (
-                            <ArrowLeft className="rotate-180 text-slate-700" size={20} />
-                        )}
-                    </button>
 
                     {/* Status Indicator */}
                     <div className="text-center py-4">
