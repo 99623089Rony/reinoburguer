@@ -12,7 +12,7 @@ export interface AdminMenuItem {
 
 export const ADMIN_MENU_ITEMS: AdminMenuItem[] = [
     { id: 'orders', label: 'Pedidos', icon: <ClipboardList size={20} /> },
-    { id: 'customer_view', label: 'Ver Loja', icon: <Store size={20} /> },
+    { id: 'customer_view', label: 'Ver Loja', icon: <Store size={24} /> },
     { id: 'stock', label: 'Cardápio', icon: <Utensils size={20} /> },
     { id: 'printer', label: 'Impressora', icon: <Printer size={20} /> },
     { id: 'finance', label: 'Caixa', icon: <DollarSign size={20} /> },
@@ -53,12 +53,12 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ activeTab, onTabChan
                                 href="/"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-slate-400 hover:bg-slate-800/50 hover:text-emerald-400 group"
+                                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-slate-400 hover:bg-slate-800/50 hover:text-blue-400 group"
                             >
-                                <span className="text-slate-500 group-hover:text-emerald-400 transition-colors">
+                                <span className="text-slate-500 group-hover:text-blue-400 transition-colors">
                                     {item.icon}
                                 </span>
-                                <span className="font-medium group-hover:underline decoration-emerald-400/30 underline-offset-4">{item.label}</span>
+                                <span className="font-medium group-hover:underline decoration-blue-400/30 underline-offset-4">{item.label}</span>
                             </a>
                         );
                     }
