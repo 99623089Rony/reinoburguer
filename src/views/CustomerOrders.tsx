@@ -12,6 +12,7 @@ export const CustomerOrders: React.FC = () => {
 
     const getStatusIcon = (status: OrderStatus) => {
         switch (status) {
+            case OrderStatus.AWAITING_PAYMENT: return <Clock size={20} className="text-slate-400 animate-pulse" />;
             case OrderStatus.PENDING: return <Clock size={20} className="text-amber-500" />;
             case OrderStatus.PREPARING: return <Package size={20} className="text-blue-500" />;
             case OrderStatus.DELIVERING: return <Truck size={20} className="text-indigo-500" />;
@@ -21,6 +22,7 @@ export const CustomerOrders: React.FC = () => {
 
     const getStatusText = (status: OrderStatus) => {
         switch (status) {
+            case OrderStatus.AWAITING_PAYMENT: return 'Aguardando Pagamento';
             case OrderStatus.PENDING: return 'Aguardando Confirmação';
             case OrderStatus.PREPARING: return 'Preparando seu Pedido';
             case OrderStatus.DELIVERING: return 'Saiu para Entrega';
@@ -59,7 +61,8 @@ export const CustomerOrders: React.FC = () => {
                             <div className="relative pt-2">
                                 <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                                     <div
-                                        className={`h-full rounded-full transition-all duration-1000 ${order.status === OrderStatus.PENDING ? 'w-[10%] bg-amber-400' :
+                                        className={`h-full rounded-full transition-all duration-1000 ${order.status === OrderStatus.AWAITING_PAYMENT ? 'w-[5%] bg-slate-300' :
+                                            order.status === OrderStatus.PENDING ? 'w-[10%] bg-amber-400' :
                                                 order.status === OrderStatus.PREPARING ? 'w-[50%] bg-blue-500' :
                                                     order.status === OrderStatus.DELIVERING ? 'w-[80%] bg-indigo-500' :
                                                         'w-full bg-emerald-500'

@@ -224,7 +224,7 @@ export const CustomerCheckout: React.FC<{
           address: fullAddress,
           total: total,
           payment_method: finalPaymentMethod,
-          status: OrderStatus.PENDING,
+          status: paymentMethod === 'Pix' ? OrderStatus.AWAITING_PAYMENT : OrderStatus.PENDING,
           items: cart,
           coupon_used: appliedCoupon?.code || null,
           reward_title: appliedCoupon?.reward?.title || null

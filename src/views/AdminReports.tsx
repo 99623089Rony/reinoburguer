@@ -68,7 +68,7 @@ export const AdminReports: React.FC = () => {
     const todayStats: Record<string, number> = {};
     orders.filter(o =>
       new Date(o.timestamp).toLocaleDateString('pt-BR') === today &&
-      o.status !== OrderStatus.PENDING // Count all except pending maybe? Or only finished? 
+      o.status !== OrderStatus.PENDING && o.status !== OrderStatus.AWAITING_PAYMENT // Count all except pending and awaiting payment 
     ).forEach(o => {
       o.items.forEach(item => {
         todayStats[item.name] = (todayStats[item.name] || 0) + item.quantity;

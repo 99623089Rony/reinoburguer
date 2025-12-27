@@ -450,6 +450,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           if (storeConfig?.printerSettings?.autoPrint) PrinterService.printOrder(mapped, storeConfig.printerSettings.paperSize);
         } else if (p.eventType === 'UPDATE') {
           const o = p.new as any;
+
+          // If order becomes PENDING (e.g., PIX paid), treat as new order
+          if (o.status === OrderStatus.PENDING) {
+            playNotificationSound();
+            const mapped: Order = { id: o.id, customerName: o.customer_name, phone: o.phone, address: o.address, total: Number(o.total), paymentMethod: o.payment_method, status: o.status, items: o.items || [], timestamp: new Date(o.created_at), couponUsed: o.coupon_used, rewardTitle: o.reward_title };
+            if (storeConfig?.printerSettings?.autoPrint) PrinterService.printOrder(mapped, storeConfig.printerSettings.paperSize);
+          }
+
           if (o.status === OrderStatus.FINISHED) {
             // Check if transaction already exists for this order to avoid duplicates locally if auto-trigger runs
             const { data: existing } = await supabase.from('transactions').select('id').eq('order_id', o.id).maybeSingle();

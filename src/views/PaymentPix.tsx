@@ -114,7 +114,7 @@ export const PaymentPix: React.FC<PaymentPixProps> = ({ orderId, amount, onBack,
                     .from('orders')
                     .update({
                         payment_status: 'paid',
-                        status: OrderStatus.PREPARING // Move to preparing as it's paid
+                        status: OrderStatus.PENDING // Move to PENDING so admin gets notified as "New Order"
                     })
                     .eq('id', orderId);
 

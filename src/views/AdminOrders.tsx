@@ -15,7 +15,10 @@ export const AdminOrders: React.FC = () => {
   const [isManualOrderOpen, setIsManualOrderOpen] = useState(false);
 
   const filteredOrders = orders.filter(o => {
-    const matchesStatus = filter === 'Todos' || o.status === filter;
+    // Hide Awaiting Payment from 'Todos' view
+    const matchesStatus = filter === 'Todos'
+      ? o.status !== OrderStatus.AWAITING_PAYMENT
+      : o.status === filter;
     const searchLower = (search || '').toLowerCase();
     const customerMatch = (o.customerName || '').toLowerCase().includes(searchLower);
     const idMatch = (o.id || '').toLowerCase().includes(searchLower);
@@ -25,6 +28,7 @@ export const AdminOrders: React.FC = () => {
 
   const getStatusStyle = (status: OrderStatus) => {
     switch (status) {
+      case OrderStatus.AWAITING_PAYMENT: return 'bg-slate-500/10 text-slate-500 border-slate-500/20';
       case OrderStatus.PENDING: return 'bg-amber-500/10 text-amber-500 border-amber-500/20';
       case OrderStatus.PREPARING: return 'bg-blue-500/10 text-blue-500 border-blue-500/20';
       case OrderStatus.DELIVERING: return 'bg-purple-500/10 text-purple-400 border-purple-500/20';
@@ -34,6 +38,7 @@ export const AdminOrders: React.FC = () => {
 
   const getStatusIcon = (status: OrderStatus) => {
     switch (status) {
+      case OrderStatus.AWAITING_PAYMENT: return <Clock size={12} className="animate-pulse" />;
       case OrderStatus.PENDING: return <Clock size={12} />;
       case OrderStatus.PREPARING: return <Package size={12} />;
       case OrderStatus.DELIVERING: return <Truck size={12} />;

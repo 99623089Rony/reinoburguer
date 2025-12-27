@@ -1,5 +1,6 @@
 
 export enum OrderStatus {
+  AWAITING_PAYMENT = 'Aguardando Pagamento',
   PENDING = 'Pendente',
   PREPARING = 'Preparo',
   DELIVERING = 'Entrega',
