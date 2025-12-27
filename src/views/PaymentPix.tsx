@@ -7,12 +7,13 @@ import { OrderStatus } from '../types';
 interface PaymentPixProps {
     orderId: string;
     amount: number;
+    createdAt?: Date;
     onBack: () => void;
     onSuccess: () => void;
 }
 
-export const PaymentPix: React.FC<PaymentPixProps> = ({ orderId, amount, onBack, onSuccess }) => {
-    const { updateOrderStatus, storeConfig } = useApp();
+export const PaymentPix: React.FC<PaymentPixProps> = ({ orderId, amount, createdAt, onBack, onSuccess }) => {
+    const { updateOrderStatus, storeConfig, deleteOrder } = useApp();
     const [qrCode, setQrCode] = useState('');
     const [qrCodeBase64, setQrCodeBase64] = useState('');
     const [pixCode, setPixCode] = useState('');
@@ -20,8 +21,22 @@ export const PaymentPix: React.FC<PaymentPixProps> = ({ orderId, amount, onBack,
     const [loading, setLoading] = useState(true);
     const [confirming, setConfirming] = useState(false);
     const [copied, setCopied] = useState(false);
-    const [timeLeft, setTimeLeft] = useState(600); // 10 minutes in seconds
+
+    // Calculate initial time left based on createdAt
+    const [timeLeft, setTimeLeft] = useState(() => {
+        if (!createdAt) return 600;
+        const now = new Date();
+        const created = new Date(createdAt);
+        const diffSeconds = Math.floor((now.getTime() - created.getTime()) / 1000);
+        const remaining = 600 - diffSeconds;
+        return remaining > 0 ? remaining : 0;
+    });
+
     const [paymentStatus, setPaymentStatus] = useState<'pending' | 'paid' | 'expired'>('pending');
+
+    useEffect(() => {
+        if (timeLeft === 0) setPaymentStatus('expired');
+    }, [timeLeft]);
 
     useEffect(() => {
         createPixPayment();
@@ -202,10 +217,21 @@ export const PaymentPix: React.FC<PaymentPixProps> = ({ orderId, amount, onBack,
                         <p className="text-slate-500 text-sm">O tempo limite para este pagamento PIX (10 minutos) foi atingido.</p>
                     </div>
                     <button
+                        onClick={async () => {
+                            if (window.confirm('Deseja realmente cancelar este pedido?')) {
+                                await deleteOrder(orderId);
+                                onBack();
+                            }
+                        }}
+                        className="w-full bg-red-600/10 text-red-500 border border-red-500/20 px-8 py-4 rounded-2xl font-black hover:bg-red-600/20 transition-all active:scale-95 mb-3"
+                    >
+                        Cancelar Pedido
+                    </button>
+                    <button
                         onClick={onBack}
                         className="w-full bg-slate-900 text-white px-8 py-4 rounded-2xl font-black border border-slate-800 hover:bg-slate-800 transition-all active:scale-95"
                     >
-                        Tentar Novamente
+                        Voltar
                     </button>
                 </div>
             </div>

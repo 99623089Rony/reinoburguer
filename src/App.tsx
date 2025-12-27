@@ -63,6 +63,7 @@ const ViewManager: React.FC = () => {
         <PaymentPix
           orderId={paymentData.orderId}
           amount={paymentData.amount}
+          createdAt={paymentData.createdAt}
           onBack={() => {
             closePayment();
             setShowCheckout(false);
@@ -87,8 +88,8 @@ const ViewManager: React.FC = () => {
         <CustomerCheckout
           onBack={() => setShowCheckout(false)}
           onSuccess={() => setShowSuccess(true)}
-          onPixPayment={(orderId, amount) => {
-            openPayment(orderId, amount);
+          onPixPayment={(orderId, amount, createdAt) => {
+            openPayment(orderId, amount, createdAt);
           }}
         />
       );

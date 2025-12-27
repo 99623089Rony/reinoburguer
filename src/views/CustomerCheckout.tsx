@@ -8,7 +8,7 @@ import { supabase } from '../lib/supabase';
 export const CustomerCheckout: React.FC<{
   onBack: () => void;
   onSuccess: () => void;
-  onPixPayment?: (orderId: string, amount: number) => void;
+  onPixPayment?: (orderId: string, amount: number, createdAt: Date) => void;
 }> = ({ onBack, onSuccess, onPixPayment }) => {
   const { cart, clearCart, storeConfig, customerProfile, updateCustomerProfile, myCoupons, prefillCoupon, setPrefillCoupon, fetchMyCoupons, isStoreOpen } = useApp(); // Added isStoreOpen
   const [step, setStep] = useState(1);
@@ -259,7 +259,7 @@ export const CustomerCheckout: React.FC<{
       if (paymentMethod === 'Pix' && onPixPayment) {
         setLoading(false);
         clearCart();
-        onPixPayment(newOrder.id, total);
+        onPixPayment(newOrder.id, total, new Date(newOrder.created_at));
         return;
       }
 

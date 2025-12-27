@@ -69,8 +69,8 @@ interface AppContextType {
   transactions: Transaction[];
   fetchTransactions: () => Promise<void>;
   addTransaction: (t: Omit<Transaction, 'id' | 'createdAt'>) => Promise<void>;
-  paymentData: { orderId: string; amount: number } | null;
-  openPayment: (orderId: string, amount: number) => void;
+  paymentData: { orderId: string; amount: number; createdAt: Date } | null;
+  openPayment: (orderId: string, amount: number, createdAt: Date) => void;
   closePayment: () => void;
 }
 
@@ -145,10 +145,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [rewards, setRewards] = useState<Reward[]>([]);
   const [myCoupons, setMyCoupons] = useState<CustomerCoupon[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [paymentData, setPaymentData] = useState<{ orderId: string; amount: number } | null>(null);
+  const [paymentData, setPaymentData] = useState<{ orderId: string; amount: number; createdAt: Date } | null>(null);
 
-  const openPayment = useCallback((orderId: string, amount: number) => {
-    setPaymentData({ orderId, amount });
+  const openPayment = useCallback((orderId: string, amount: number, createdAt: Date) => {
+    setPaymentData({ orderId, amount, createdAt });
   }, []);
 
   const closePayment = useCallback(() => {
