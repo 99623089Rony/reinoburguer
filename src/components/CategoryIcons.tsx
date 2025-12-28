@@ -76,27 +76,18 @@ export const SodaCanIcon: React.FC<IconProps> = ({ size = 24, className = "" }) 
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
-        strokeWidth="1.5"
+        strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
         className={className}
     >
-        {/* Can Body */}
-        <rect x="6" y="5" width="12" height="17" rx="2" fill="currentColor" fillOpacity="0.15" />
-        <rect x="6" y="5" width="12" height="17" rx="2" />
-        {/* Top rim */}
-        <ellipse cx="12" cy="5" rx="6" ry="2" fill="currentColor" fillOpacity="0.1" />
-        <ellipse cx="12" cy="5" rx="6" ry="2" />
-        {/* Pull tab */}
-        <ellipse cx="12" cy="3" rx="2" ry="1" />
-        <path d="M12 2v1" strokeWidth="2" />
-        {/* Brand stripe/design */}
-        <path d="M6 9h12" strokeWidth="1" strokeOpacity="0.5" />
-        <path d="M6 11h12" strokeWidth="1" strokeOpacity="0.5" />
-        {/* Highlight/shine */}
-        <path d="M8 8v8" strokeWidth="1" strokeOpacity="0.3" />
-        {/* Wave logo */}
-        <path d="M9 14c1-1 2 1 3 0s2 1 3 0" strokeWidth="1.5" />
+        {/* Cup body - simple trapezoid shape */}
+        <path d="M7 8l1 13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1l1-13H7z" fill="currentColor" fillOpacity="0.15" />
+        <path d="M7 8l1 13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1l1-13H7z" />
+        {/* Cup lid */}
+        <path d="M6 8h12" />
+        {/* Straw */}
+        <path d="M14 8V2" />
     </svg>
 );
 
