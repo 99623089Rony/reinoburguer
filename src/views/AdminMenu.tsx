@@ -19,6 +19,7 @@ export const AdminMenu: React.FC = () => {
 
     const [activeTab, setActiveTab] = useState<'products' | 'categories' | 'extras' | 'stock'>('products');
     const [search, setSearch] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState<string>('Todas');
     const [showProductModal, setShowProductModal] = useState(false);
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
@@ -100,10 +101,12 @@ export const AdminMenu: React.FC = () => {
         } catch (error) { console.error(error); }
     };
 
-    const filteredProducts = products.filter(p =>
-        p.name.toLowerCase().includes(search.toLowerCase()) ||
-        p.category.toLowerCase().includes(search.toLowerCase())
-    );
+    const filteredProducts = products.filter(p => {
+        const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase()) ||
+            p.category.toLowerCase().includes(search.toLowerCase());
+        const matchesCategory = selectedCategory === 'Todas' || p.category === selectedCategory;
+        return matchesSearch && matchesCategory;
+    });
 
     // --- Categories Tab Logic ---
     const [newCategory, setNewCategory] = useState('');
@@ -251,23 +254,63 @@ export const AdminMenu: React.FC = () => {
             {/* --- PRODUCTS VIEW --- */}
             {activeTab === 'products' && (
                 <div className="space-y-6">
-                    <div className="flex gap-3">
-                        <div className="relative group flex-1 md:w-64">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-orange-500 transition-colors" size={18} />
-                            <input
-                                type="text"
-                                placeholder="Buscar lanche..."
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                className="w-full pl-12 pr-4 py-3 bg-slate-900/50 border border-slate-800 rounded-xl focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none text-slate-200 placeholder:text-slate-600 transition-all"
-                            />
+                    <div className="flex flex-col gap-4">
+                        {/* Search and Add Button Row */}
+                        <div className="flex gap-3">
+                            <div className="relative group flex-1 md:w-64">
+                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-orange-500 transition-colors" size={18} />
+                                <input
+                                    type="text"
+                                    placeholder="Buscar lanche..."
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    className="w-full pl-12 pr-4 py-3 bg-slate-900/50 border border-slate-800 rounded-xl focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none text-slate-200 placeholder:text-slate-600 transition-all"
+                                />
+                            </div>
+                            <button
+                                onClick={() => handleOpenProductModal()}
+                                className="bg-orange-600 hover:bg-orange-500 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 transform active:scale-95 transition-all shadow-lg shadow-orange-900/20"
+                            >
+                                <Plus size={20} /> <span className="hidden md:inline">Novo Produto</span>
+                            </button>
                         </div>
-                        <button
-                            onClick={() => handleOpenProductModal()}
-                            className="bg-orange-600 hover:bg-orange-500 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 transform active:scale-95 transition-all shadow-lg shadow-orange-900/20"
-                        >
-                            <Plus size={20} /> <span className="hidden md:inline">Novo Produto</span>
-                        </button>
+
+                        {/* Category Filter Row */}
+                        <div className="flex items-center gap-3 overflow-x-auto pb-2 no-scrollbar">
+                            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider shrink-0">Categoria:</span>
+                            <button
+                                onClick={() => setSelectedCategory('Todas')}
+                                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap border ${selectedCategory === 'Todas'
+                                        ? 'bg-orange-600 text-white border-orange-500 shadow-lg shadow-orange-900/20'
+                                        : 'text-slate-400 border-slate-800 hover:border-slate-600 hover:text-slate-300'
+                                    }`}
+                            >
+                                Todas ({products.length})
+                            </button>
+                            {categories.map(cat => {
+                                const count = products.filter(p => p.category === cat.name).length;
+                                return (
+                                    <button
+                                        key={cat.id}
+                                        onClick={() => setSelectedCategory(cat.name)}
+                                        className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap border ${selectedCategory === cat.name
+                                                ? 'bg-orange-600 text-white border-orange-500 shadow-lg shadow-orange-900/20'
+                                                : 'text-slate-400 border-slate-800 hover:border-slate-600 hover:text-slate-300'
+                                            }`}
+                                    >
+                                        {cat.name} ({count})
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    {/* Products Count */}
+                    <div className="flex items-center justify-between">
+                        <p className="text-sm text-slate-500">
+                            Mostrando <span className="font-bold text-slate-300">{filteredProducts.length}</span> produto{filteredProducts.length !== 1 ? 's' : ''}
+                            {selectedCategory !== 'Todas' && <span> em <span className="font-bold text-orange-500">{selectedCategory}</span></span>}
+                        </p>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
