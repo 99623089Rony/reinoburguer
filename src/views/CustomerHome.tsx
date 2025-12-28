@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Minus, Utensils, Beer, IceCream, Sandwich, Pizza, UtensilsCrossed, ShoppingBag } from 'lucide-react';
+import { Search, Plus, Minus, Utensils, IceCream, UtensilsCrossed, ShoppingBag, Package } from 'lucide-react';
+import { BurgerIcon, FriesIcon, SodaCanIcon, ComboIcon } from '../components/CategoryIcons';
 import { useApp } from '../context/AppContext';
 
 export const CustomerHome: React.FC = () => {
@@ -21,21 +22,20 @@ export const CustomerHome: React.FC = () => {
 
   const getInCartQty = (id: string) => cart.filter(i => i.id === id).reduce((acc, i) => acc + i.quantity, 0);
 
-  // Helper to get icon
+  // Helper to get icon - using custom icons to match admin panel
   const getCategoryIcon = (iconName: string) => {
     const icons: Record<string, React.ReactNode> = {
-      'Sandwich': <Sandwich size={24} />,
-      'UtensilsCrossed': <UtensilsCrossed size={24} />,
-      'CupSoda': <Beer size={24} />,
-      'ShoppingBag': <ShoppingBag size={24} />,
+      'Sandwich': <BurgerIcon size={24} />,
+      'UtensilsCrossed': <FriesIcon size={24} />,
+      'CupSoda': <SodaCanIcon size={24} />,
+      'ShoppingBag': <ComboIcon size={24} />,
       'IceCream': <IceCream size={24} />,
-      'Utensils': <Utensils size={24} />,
-      'Pizza': <Pizza size={24} />,
-      'Package': <Pizza size={24} />,
+      'Utensils': <UtensilsCrossed size={24} />,
+      'Package': <Package size={24} />,
       // Legacy fallbacks
-      'Burger': <Sandwich size={24} />,
-      'Beer': <Beer size={24} />,
-      'FrenchFries': <UtensilsCrossed size={24} />,
+      'Burger': <BurgerIcon size={24} />,
+      'Beer': <SodaCanIcon size={24} />,
+      'FrenchFries': <FriesIcon size={24} />,
       'Cake': <IceCream size={24} />,
     };
 
