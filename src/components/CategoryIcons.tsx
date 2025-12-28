@@ -98,36 +98,30 @@ export const ComboIcon: React.FC<IconProps> = ({ size = 24, className = "" }) =>
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
-        strokeWidth="1.5"
+        strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
         className={className}
     >
-        {/* Mini Burger (back left) */}
-        <g transform="translate(-1, 0) scale(0.45)">
-            <path d="M4 12c0-2.5 2.5-4 6-4s6 1.5 6 4H4z" fill="currentColor" fillOpacity="0.2" />
-            <rect x="4" y="12" width="12" height="2" rx="1" fill="currentColor" fillOpacity="0.3" />
-            <path d="M4 15h12c0 1.5-1 2.5-2 2.5H6c-1 0-2-1-2-2.5z" fill="currentColor" fillOpacity="0.2" />
-        </g>
+        {/* Simple Burger (left side) */}
+        {/* Top bun */}
+        <path d="M2 12c0-2 2-4 5-4s5 2 5 4H2z" fill="currentColor" fillOpacity="0.15" />
+        <path d="M2 12c0-2 2-4 5-4s5 2 5 4H2z" />
+        {/* Patty */}
+        <path d="M2 13h10v2H2z" fill="currentColor" fillOpacity="0.2" />
+        <path d="M2 13h10" />
+        <path d="M2 15h10" />
+        {/* Bottom bun */}
+        <path d="M2 16h10c0 1-.5 2-1.5 2h-7C2.5 18 2 17 2 16z" fill="currentColor" fillOpacity="0.15" />
+        <path d="M2 16h10c0 1-.5 2-1.5 2h-7C2.5 18 2 17 2 16z" />
 
-        {/* Mini Cup/Drink (back right) */}
-        <g transform="translate(14, 0)">
-            <path d="M1 5l1.5 14a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1L9 5H1z" fill="currentColor" fillOpacity="0.15" />
-            <path d="M1 5l1.5 14a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1L9 5H1z" />
-            <ellipse cx="5" cy="5" rx="4" ry="1.5" />
-            <path d="M5 2v3" />
-            <circle cx="5" cy="2" r="1" />
-        </g>
-
-        {/* Mini Fries Box (front center) */}
-        <g transform="translate(5, 8)">
-            <path d="M0 5l.8 8a.5.5 0 0 0 .5.5h5.4a.5.5 0 0 0 .5-.5l.8-8H0z" fill="currentColor" fillOpacity="0.2" />
-            <path d="M0 5l.8 8a.5.5 0 0 0 .5.5h5.4a.5.5 0 0 0 .5-.5l.8-8H0z" />
-            <path d="M1.5 5V1" strokeWidth="1.5" />
-            <path d="M3 5V0" strokeWidth="1.5" />
-            <path d="M4.5 5V0" strokeWidth="1.5" />
-            <path d="M6 5V1" strokeWidth="1.5" />
-        </g>
+        {/* Simple Cup with straw (right side) */}
+        <path d="M15 10l.8 10a1 1 0 0 0 1 1h2.4a1 1 0 0 0 1-.9L21 10h-6z" fill="currentColor" fillOpacity="0.15" />
+        <path d="M15 10l.8 10a1 1 0 0 0 1 1h2.4a1 1 0 0 0 1-.9L21 10h-6z" />
+        {/* Lid */}
+        <path d="M14.5 10h7" />
+        {/* Straw */}
+        <path d="M19 10V4" />
     </svg>
 );
 
