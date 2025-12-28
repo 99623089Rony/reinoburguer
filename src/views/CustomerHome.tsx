@@ -3,7 +3,7 @@ import { Search, Plus, Minus, Utensils, Beer, IceCream, Sandwich, Pizza, Utensil
 import { useApp } from '../context/AppContext';
 
 export const CustomerHome: React.FC = () => {
-  const { products, addToCart, cart, categories, storeConfig, isStoreOpen } = useApp();
+  const { products, addToCart, cart, categories, storeConfig, isStoreOpen, openingHours } = useApp();
   const [activeCategory, setActiveCategory] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -42,6 +42,21 @@ export const CustomerHome: React.FC = () => {
     return icons[iconName] || <Utensils size={24} />;
   };
 
+  // Get today's opening hours
+  const getTodayHours = () => {
+    const dayOfWeek = new Date().getDay();
+    const todayConfig = openingHours.find(h => h.day_of_week === dayOfWeek);
+    if (!todayConfig || todayConfig.is_closed || !todayConfig.open_time || !todayConfig.close_time) {
+      return null;
+    }
+    return {
+      open: todayConfig.open_time.slice(0, 5),
+      close: todayConfig.close_time.slice(0, 5)
+    };
+  };
+
+  const todayHours = getTodayHours();
+
   return (
     <div className="p-5 space-y-6 pb-24">
       <header className="flex items-center justify-between">
@@ -50,8 +65,18 @@ export const CustomerHome: React.FC = () => {
           <div className="flex items-center gap-2 mt-1">
             <div className={`w-2 h-2 rounded-full ${isStoreOpen ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
             <span className={`text-[10px] font-bold uppercase tracking-wider ${isStoreOpen ? 'text-emerald-500' : 'text-red-500'}`}>
-              {isStoreOpen ? 'Aberto Agora' : 'Fechado'}
+              {isStoreOpen ? 'Aberto' : 'Fechado'}
             </span>
+            {todayHours && (
+              <span className="text-[10px] text-slate-500 font-medium">
+                • {todayHours.open} às {todayHours.close}
+              </span>
+            )}
+            {!todayHours && !isStoreOpen && (
+              <span className="text-[10px] text-slate-400 font-medium">
+                • Não abre hoje
+              </span>
+            )}
           </div>
         </div>
         {storeConfig?.logoUrl ? (
