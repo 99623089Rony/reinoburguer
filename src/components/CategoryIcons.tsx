@@ -12,19 +12,29 @@ export const BurgerIcon: React.FC<IconProps> = ({ size = 24, className = "" }) =
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
-        strokeWidth="2"
+        strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"
         className={className}
     >
-        {/* Top Bun */}
-        <path d="M12 4C7.5 4 4 6.5 4 9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2c0-2.5-3.5-5-8-5z" />
-        {/* Lettuce/Cheese Line */}
-        <path d="M4 11s1 1 2 1 2-1 2-1 1 1 2 1 2-1 2-1" />
+        {/* Top Bun with sesame seeds */}
+        <path d="M4 10c0-3.3 3.6-6 8-6s8 2.7 8 6H4z" fill="currentColor" fillOpacity="0.15" />
+        <path d="M4 10c0-3.3 3.6-6 8-6s8 2.7 8 6" />
+        <circle cx="8" cy="6" r="0.5" fill="currentColor" />
+        <circle cx="12" cy="5" r="0.5" fill="currentColor" />
+        <circle cx="16" cy="6" r="0.5" fill="currentColor" />
+        <circle cx="10" cy="7" r="0.5" fill="currentColor" />
+        <circle cx="14" cy="7" r="0.5" fill="currentColor" />
+        {/* Lettuce wavy */}
+        <path d="M3 10.5c1 .5 2 0 3 .5s2 1 3 .5 2-.5 3 0 2 .5 3 0 2-.5 3 0 2 .5 3 0" strokeWidth="1" />
+        {/* Cheese */}
+        <path d="M4 12h16v1.5l-2 1-2-1-2 1-2-1-2 1-2-1-2 1v-1.5z" fill="currentColor" fillOpacity="0.2" />
         {/* Patty */}
-        <rect x="4" y="13" width="16" height="3" rx="1" />
+        <rect x="3" y="14" width="18" height="3" rx="1.5" fill="currentColor" fillOpacity="0.3" />
+        <rect x="3" y="14" width="18" height="3" rx="1.5" />
         {/* Bottom Bun */}
-        <path d="M5 17h14c.6 0 1 .4 1 1s-.4 2-1 2H5c-.6 0-1-.8-1-2s.4-1 1-1z" />
+        <path d="M4 18h16a1 1 0 0 1 1 1c0 1-1 2-2 2H5c-1 0-2-1-2-2a1 1 0 0 1 1-1z" fill="currentColor" fillOpacity="0.15" />
+        <path d="M4 18h16a1 1 0 0 1 1 1c0 1-1 2-2 2H5c-1 0-2-1-2-2a1 1 0 0 1 1-1z" />
     </svg>
 );
 
@@ -35,18 +45,27 @@ export const FriesIcon: React.FC<IconProps> = ({ size = 24, className = "" }) =>
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
-        strokeWidth="2"
+        strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"
         className={className}
     >
-        {/* Fries Box */}
-        <path d="M5 21h14l1.5-9H3.5L5 21z" />
-        {/* Fries Sticks */}
-        <path d="M7 12V7" />
-        <path d="M10 12V6" />
-        <path d="M14 12V6" />
-        <path d="M17 12V7" />
+        {/* Fries Box with brand stripe */}
+        <path d="M5 10l1 11a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1l1-11H5z" fill="currentColor" fillOpacity="0.15" />
+        <path d="M5 10l1 11a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1l1-11H5z" />
+        {/* Red stripe detail */}
+        <path d="M6 12h12" strokeWidth="2" strokeOpacity="0.3" />
+        {/* Multiple fries sticks with varying heights */}
+        <path d="M7 10V4" strokeWidth="2" />
+        <path d="M9.5 10V3" strokeWidth="2" />
+        <path d="M12 10V2" strokeWidth="2" />
+        <path d="M14.5 10V3" strokeWidth="2" />
+        <path d="M17 10V4" strokeWidth="2" />
+        {/* Extra fries for fullness */}
+        <path d="M8 10V5.5" strokeWidth="1.5" strokeOpacity="0.7" />
+        <path d="M11 10V4" strokeWidth="1.5" strokeOpacity="0.7" />
+        <path d="M13 10V3.5" strokeWidth="1.5" strokeOpacity="0.7" />
+        <path d="M16 10V5" strokeWidth="1.5" strokeOpacity="0.7" />
     </svg>
 );
 
@@ -57,18 +76,27 @@ export const SodaCanIcon: React.FC<IconProps> = ({ size = 24, className = "" }) 
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
-        strokeWidth="2"
+        strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"
         className={className}
     >
         {/* Can Body */}
-        <path d="M7 6v14a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V6" />
-        {/* Can Top */}
-        <path d="M17 6a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2" />
-        {/* Tab/Detail */}
-        <path d="M12 8v8" />
-        <path d="M8 6h8" />
+        <rect x="6" y="5" width="12" height="17" rx="2" fill="currentColor" fillOpacity="0.15" />
+        <rect x="6" y="5" width="12" height="17" rx="2" />
+        {/* Top rim */}
+        <ellipse cx="12" cy="5" rx="6" ry="2" fill="currentColor" fillOpacity="0.1" />
+        <ellipse cx="12" cy="5" rx="6" ry="2" />
+        {/* Pull tab */}
+        <ellipse cx="12" cy="3" rx="2" ry="1" />
+        <path d="M12 2v1" strokeWidth="2" />
+        {/* Brand stripe/design */}
+        <path d="M6 9h12" strokeWidth="1" strokeOpacity="0.5" />
+        <path d="M6 11h12" strokeWidth="1" strokeOpacity="0.5" />
+        {/* Highlight/shine */}
+        <path d="M8 8v8" strokeWidth="1" strokeOpacity="0.3" />
+        {/* Wave logo */}
+        <path d="M9 14c1-1 2 1 3 0s2 1 3 0" strokeWidth="1.5" />
     </svg>
 );
 
@@ -79,23 +107,93 @@ export const ComboIcon: React.FC<IconProps> = ({ size = 24, className = "" }) =>
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
-        strokeWidth="2"
+        strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"
         className={className}
     >
-        {/* Small Burger (Left) */}
-        <path d="M4 14c0-1 1-2 3-2s3 1 3 2" />
-        <rect x="4" y="14" width="6" height="4" rx="1" />
+        {/* Mini Burger (back left) */}
+        <g transform="translate(-1, 0) scale(0.45)">
+            <path d="M4 12c0-2.5 2.5-4 6-4s6 1.5 6 4H4z" fill="currentColor" fillOpacity="0.2" />
+            <rect x="4" y="12" width="12" height="2" rx="1" fill="currentColor" fillOpacity="0.3" />
+            <path d="M4 15h12c0 1.5-1 2.5-2 2.5H6c-1 0-2-1-2-2.5z" fill="currentColor" fillOpacity="0.2" />
+        </g>
 
-        {/* Small Soda (Back/Right) */}
-        <path d="M16 10v10a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1V10" />
-        <path d="M16 10h4" />
-        <path d="M18 7v3" />
+        {/* Mini Cup/Drink (back right) */}
+        <g transform="translate(14, 0)">
+            <path d="M1 5l1.5 14a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1L9 5H1z" fill="currentColor" fillOpacity="0.15" />
+            <path d="M1 5l1.5 14a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1L9 5H1z" />
+            <ellipse cx="5" cy="5" rx="4" ry="1.5" />
+            <path d="M5 2v3" />
+            <circle cx="5" cy="2" r="1" />
+        </g>
 
-        {/* Small Fries (Front/Center) */}
-        <path d="M11 14l1 6h3l1-6H11z" />
-        <path d="M12 11v3" />
-        <path d="M14 11v3" />
+        {/* Mini Fries Box (front center) */}
+        <g transform="translate(5, 8)">
+            <path d="M0 5l.8 8a.5.5 0 0 0 .5.5h5.4a.5.5 0 0 0 .5-.5l.8-8H0z" fill="currentColor" fillOpacity="0.2" />
+            <path d="M0 5l.8 8a.5.5 0 0 0 .5.5h5.4a.5.5 0 0 0 .5-.5l.8-8H0z" />
+            <path d="M1.5 5V1" strokeWidth="1.5" />
+            <path d="M3 5V0" strokeWidth="1.5" />
+            <path d="M4.5 5V0" strokeWidth="1.5" />
+            <path d="M6 5V1" strokeWidth="1.5" />
+        </g>
+    </svg>
+);
+
+// Additional icons for more categories
+export const DessertIcon: React.FC<IconProps> = ({ size = 24, className = "" }) => (
+    <svg
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className={className}
+    >
+        {/* Ice cream cone */}
+        <path d="M12 22L7 10h10L12 22z" fill="currentColor" fillOpacity="0.15" />
+        <path d="M12 22L7 10h10L12 22z" />
+        {/* Waffle pattern */}
+        <path d="M8.5 13l7-3M8.5 16l5-3" strokeWidth="0.75" strokeOpacity="0.5" />
+        {/* Ice cream scoops */}
+        <circle cx="12" cy="7" r="4" fill="currentColor" fillOpacity="0.2" />
+        <circle cx="12" cy="7" r="4" />
+        <circle cx="9" cy="5" r="2.5" fill="currentColor" fillOpacity="0.15" />
+        <circle cx="9" cy="5" r="2.5" />
+        <circle cx="15" cy="5" r="2.5" fill="currentColor" fillOpacity="0.15" />
+        <circle cx="15" cy="5" r="2.5" />
+        {/* Cherry on top */}
+        <circle cx="12" cy="2" r="1.5" fill="currentColor" fillOpacity="0.3" />
+        <path d="M12 2c0-1 1-2 2-1" />
+    </svg>
+);
+
+export const PortionsIcon: React.FC<IconProps> = ({ size = 24, className = "" }) => (
+    <svg
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className={className}
+    >
+        {/* Bowl */}
+        <path d="M4 11c0 5 3.5 9 8 9s8-4 8-9H4z" fill="currentColor" fillOpacity="0.15" />
+        <path d="M4 11c0 5 3.5 9 8 9s8-4 8-9H4z" />
+        {/* Bowl rim */}
+        <ellipse cx="12" cy="11" rx="8" ry="2" fill="currentColor" fillOpacity="0.1" />
+        <ellipse cx="12" cy="11" rx="8" ry="2" />
+        {/* Food items - onion rings representation */}
+        <circle cx="9" cy="8" r="2" strokeWidth="1.5" />
+        <circle cx="14" cy="7" r="2" strokeWidth="1.5" />
+        <circle cx="11" cy="6" r="1.5" strokeWidth="1.5" />
+        <circle cx="16" cy="9" r="1.5" strokeWidth="1.5" />
+        <circle cx="7" cy="9" r="1.5" strokeWidth="1.5" />
     </svg>
 );
