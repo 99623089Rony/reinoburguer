@@ -1,18 +1,44 @@
 import React, { useState } from 'react';
-import { MoreVertical, Phone, MapPin, CreditCard, Clock, CheckCircle, Package, Truck, Filter, Search, RotateCcw, Bike, Sandwich, Trash2, ShoppingBag, Printer, Trophy, Plus } from 'lucide-react';
+import { MoreVertical, Phone, MapPin, CreditCard, Clock, CheckCircle, Package, Truck, Filter, Search, RotateCcw, Bike, Sandwich, Trash2, ShoppingBag, Printer, Trophy, Plus, Calendar } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
 import { OrderStatus, Order } from '../types';
 import { PrinterService } from '../lib/PrinterService';
 import { AdminManualOrder } from '../components/AdminManualOrder';
 
+type DateFilterType = 'today' | 'week' | 'month' | 'all';
+
 export const AdminOrders: React.FC = () => {
   const { orders, updateOrderStatus, deleteOrder } = useApp();
   const [filter, setFilter] = useState<OrderStatus | 'Todos'>('Todos');
+  const [dateFilter, setDateFilter] = useState<DateFilterType>('today');
   const [search, setSearch] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [isManualOrderOpen, setIsManualOrderOpen] = useState(false);
+
+  // Helper function to filter by date
+  const filterByDate = (orderDate: Date) => {
+    const now = new Date();
+    const orderDateTime = new Date(orderDate);
+
+    switch (dateFilter) {
+      case 'today':
+        return orderDateTime.toDateString() === now.toDateString();
+      case 'week':
+        const weekAgo = new Date(now);
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        return orderDateTime >= weekAgo;
+      case 'month':
+        const monthAgo = new Date(now);
+        monthAgo.setMonth(monthAgo.getMonth() - 1);
+        return orderDateTime >= monthAgo;
+      case 'all':
+        return true;
+      default:
+        return true;
+    }
+  };
 
   const filteredOrders = orders.filter(o => {
     // Hide Awaiting Payment from 'Todos' view
@@ -22,8 +48,9 @@ export const AdminOrders: React.FC = () => {
     const searchLower = (search || '').toLowerCase();
     const customerMatch = (o.customerName || '').toLowerCase().includes(searchLower);
     const idMatch = (o.id || '').toLowerCase().includes(searchLower);
+    const matchesDate = filterByDate(o.timestamp);
 
-    return matchesStatus && (customerMatch || idMatch);
+    return matchesStatus && matchesDate && (customerMatch || idMatch);
   });
 
   const getStatusStyle = (status: OrderStatus) => {
@@ -211,40 +238,69 @@ export const AdminOrders: React.FC = () => {
         </div>
       )}
 
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="flex items-center gap-4 overflow-x-auto pb-2 md:pb-0 no-scrollbar">
-          {['Todos', ...Object.values(OrderStatus)].map(s => (
+      <div className="flex flex-col gap-4">
+        {/* Status Filter and Search Row */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-4 overflow-x-auto pb-2 md:pb-0 no-scrollbar">
+            {['Todos', ...Object.values(OrderStatus)].map(s => (
+              <button
+                key={s}
+                onClick={(e) => { e.stopPropagation(); setFilter(s as any); }}
+                className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all whitespace-nowrap border ${filter === s ? 'bg-orange-600 text-white border-orange-500 shadow-lg shadow-orange-900/20' : 'text-slate-400 border-slate-800 hover:border-slate-700'
+                  }`}
+              >
+                {s === 'Todos' ? 'Todos Status' : s}
+              </button>
+            ))}
+
+            <div className="h-8 w-px bg-slate-800 mx-2 hidden md:block"></div>
+
             <button
-              key={s}
-              onClick={(e) => { e.stopPropagation(); setFilter(s as any); }}
-              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all whitespace-nowrap border ${filter === s ? 'bg-orange-600 text-white border-orange-500 shadow-lg shadow-orange-900/20' : 'text-slate-400 border-slate-800 hover:border-slate-700'
+              onClick={() => setIsManualOrderOpen(true)}
+              className="px-4 py-2 rounded-xl text-sm font-bold bg-emerald-500 text-white hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 active:scale-95 transition-all flex items-center gap-2 whitespace-nowrap"
+            >
+              <Plus size={16} /> Novo Pedido
+            </button>
+          </div>
+
+          <div className="relative group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-400 transition-colors" size={16} />
+            <input
+              type="text"
+              placeholder="Buscar por nome ou ID..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full md:w-64 pl-12 pr-4 py-3 bg-slate-900/50 border border-slate-800 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all placeholder:text-slate-600 text-sm"
+            />
+          </div>
+        </div>
+
+        {/* Date Filter Row */}
+        <div className="flex items-center gap-3 overflow-x-auto pb-2 no-scrollbar">
+          <div className="flex items-center gap-2 text-slate-500 shrink-0">
+            <Calendar size={16} />
+            <span className="text-xs font-bold uppercase tracking-wider">Período:</span>
+          </div>
+          {([
+            { value: 'today', label: 'Hoje' },
+            { value: 'week', label: 'Última Semana' },
+            { value: 'month', label: 'Último Mês' },
+            { value: 'all', label: 'Todos' }
+          ] as { value: DateFilterType; label: string }[]).map(({ value, label }) => (
+            <button
+              key={value}
+              onClick={(e) => { e.stopPropagation(); setDateFilter(value); }}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap border ${dateFilter === value
+                  ? 'bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-900/20'
+                  : 'text-slate-400 border-slate-800 hover:border-slate-600 hover:text-slate-300'
                 }`}
             >
-              {s === 'Todos' ? 'Todos Status' : s}
+              {label}
             </button>
           ))}
-
-          <div className="h-8 w-px bg-slate-800 mx-2 hidden md:block"></div>
-
-          <button
-            onClick={() => setIsManualOrderOpen(true)}
-            className="px-4 py-2 rounded-xl text-sm font-bold bg-emerald-500 text-white hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 active:scale-95 transition-all flex items-center gap-2 whitespace-nowrap"
-          >
-            <Plus size={16} /> Novo Pedido
-          </button>
-        </div>
-
-        <div className="relative group">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-400 transition-colors" size={16} />
-          <input
-            type="text"
-            placeholder="Buscar por nome ou ID..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full md:w-64 pl-12 pr-4 py-3 bg-slate-900/50 border border-slate-800 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all placeholder:text-slate-600 text-sm"
-          />
         </div>
       </div>
+
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {filteredOrders.map(order => (
