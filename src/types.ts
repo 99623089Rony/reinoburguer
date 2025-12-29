@@ -39,6 +39,7 @@ export interface Order {
   timestamp: Date;
   couponUsed?: string;
   rewardTitle?: string;
+  dailyOrderNumber?: number;
 }
 
 export interface Customer {

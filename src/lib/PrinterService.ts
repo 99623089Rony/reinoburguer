@@ -159,7 +159,7 @@ export class PrinterService {
         text += CENTER + BOLD_ON + 'REINO BURGUER' + BOLD_OFF + '\n';
         text += LEFT + '\n'; // Reset align
 
-        text += `Pedido: #${order.id.slice(-5).toUpperCase()}\n`;
+        text += `Pedido: #${order.dailyOrderNumber || order.id.slice(-5).toUpperCase()}\n`;
         text += `Data:   ${new Date(order.timestamp).toLocaleDateString('pt-BR')} ${new Date(order.timestamp).toLocaleTimeString('pt-BR').substring(0, 5)}\n`;
         text += separator + '\n';
 

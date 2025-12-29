@@ -91,7 +91,7 @@ export const CustomerOrders: React.FC = () => {
                         <div key={order.id} className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 space-y-6">
                             <div className="flex items-center justify-between border-b border-gray-50 pb-4">
                                 <div>
-                                    <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Pedido #{order.id.slice(0, 6)}</span>
+                                    <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Pedido #{order.dailyOrderNumber || order.id.slice(0, 6)}</span>
                                     <div className="flex items-center gap-2">
                                         <p className="text-xs text-gray-400">{order.timestamp.toLocaleTimeString().slice(0, 5)}</p>
                                         {order.status === OrderStatus.AWAITING_PAYMENT && (

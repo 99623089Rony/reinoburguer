@@ -310,7 +310,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         status: (Object.values(OrderStatus).includes(o.status as OrderStatus) ? o.status : OrderStatus.PENDING) as OrderStatus,
         items: Array.isArray(o.items) ? o.items : [], timestamp: new Date(o.created_at),
         couponUsed: o.coupon_used,
-        rewardTitle: o.reward_title
+        rewardTitle: o.reward_title,
+        dailyOrderNumber: o.daily_order_number
       })));
     }
   }, [view, customerProfile?.phone]);

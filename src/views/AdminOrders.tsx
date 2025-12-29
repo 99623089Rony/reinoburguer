@@ -102,7 +102,7 @@ export const AdminOrders: React.FC = () => {
           <div className="bg-slate-900 border border-slate-800 w-full max-w-2xl rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
             <div className="p-6 border-b border-slate-800 flex items-center justify-between bg-slate-900/50">
               <div>
-                <h2 className="text-xl font-black text-white">Pedido #{selectedOrder.id.slice(-8).toUpperCase()}</h2>
+                <h2 className="text-xl font-black text-white">Pedido #{selectedOrder.dailyOrderNumber || selectedOrder.id.slice(-8).toUpperCase()}</h2>
                 <p className="text-xs text-slate-500">{new Date(selectedOrder.timestamp).toLocaleString('pt-BR')}</p>
               </div>
               <button onClick={() => setSelectedOrder(null)} className="p-2 hover:bg-slate-800 rounded-full text-slate-400 transition-colors">
@@ -309,7 +309,7 @@ export const AdminOrders: React.FC = () => {
 
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <span className="text-slate-100 font-bold tracking-tight">Pedido #{order.id.slice(0, 8)}</span>
+                <span className="text-slate-100 font-bold tracking-tight">Pedido #{order.dailyOrderNumber || order.id.slice(0, 8)}</span>
                 <div className={`px-3 py-1 rounded-full border text-[10px] font-bold flex items-center gap-2 uppercase tracking-wide ${getStatusStyle(order.status)}`}>
                   {getStatusIcon(order.status)}
                   <span>{order.status}</span>
