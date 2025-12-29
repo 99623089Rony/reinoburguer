@@ -114,25 +114,23 @@ export const AdminFinance: React.FC = () => {
                         </button>
                     ))}
 
-                    <div className="relative">
-                        <button
-                            onClick={() => setDateFilter('custom')}
-                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap border flex items-center gap-2 ${dateFilter === 'custom'
-                                ? 'bg-emerald-500 text-white border-emerald-500 shadow-lg shadow-emerald-500/20'
-                                : 'text-slate-400 border-slate-800 hover:border-slate-700 hover:text-slate-300'
-                                }`}
-                        >
-                            <Calendar size={14} /> Data
-                        </button>
-                        {dateFilter === 'custom' && (
+                    {dateFilter === 'custom' ? (
+                        <div className="flex items-center gap-2 animate-in fade-in zoom-in-95 duration-200">
                             <input
                                 type="date"
                                 value={customDate}
                                 onChange={(e) => setCustomDate(e.target.value)}
-                                className="absolute right-0 top-full mt-2 bg-slate-800 text-white border border-slate-700 rounded-xl p-2 z-20 shadow-xl outline-none"
+                                className="bg-slate-800 text-white border border-emerald-500 rounded-xl px-4 py-2 text-xs font-bold outline-none shadow-lg shadow-emerald-500/20 focus:ring-2 focus:ring-emerald-500/20"
                             />
-                        )}
-                    </div>
+                        </div>
+                    ) : (
+                        <button
+                            onClick={() => setDateFilter('custom')}
+                            className="px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap border text-slate-400 border-slate-800 hover:border-slate-700 hover:text-slate-300 flex items-center gap-2"
+                        >
+                            <Calendar size={14} /> Data
+                        </button>
+                    )}
 
                     <div className="w-px h-8 bg-slate-800 mx-2 hidden md:block"></div>
                     <button
