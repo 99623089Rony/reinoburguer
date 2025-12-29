@@ -12,7 +12,7 @@ export const CustomerCheckout: React.FC<{
 }> = ({ onBack, onSuccess, onPixPayment }) => {
   const { cart, clearCart, storeConfig, customerProfile, updateCustomerProfile, myCoupons, prefillCoupon, setPrefillCoupon, fetchMyCoupons, isStoreOpen } = useApp(); // Added isStoreOpen
   const [step, setStep] = useState(1);
-  const [paymentMethod, setPaymentMethod] = useState('pix');
+  const [paymentMethod, setPaymentMethod] = useState('Pix');
   const [loading, setLoading] = useState(false);
   const [changeFor, setChangeFor] = useState('');
   const [couponCode, setCouponCode] = useState('');
@@ -256,7 +256,7 @@ export const CustomerCheckout: React.FC<{
           address: fullAddress,
           total: total,
           payment_method: finalPaymentMethod,
-          status: paymentMethod === 'Pix' ? OrderStatus.AWAITING_PAYMENT : OrderStatus.PENDING,
+          status: (paymentMethod === 'Pix' || paymentMethod === 'pix') ? OrderStatus.AWAITING_PAYMENT : OrderStatus.PENDING,
           items: cart,
           coupon_used: appliedCoupon?.code || null,
           reward_title: appliedCoupon?.reward?.title || null
@@ -288,7 +288,7 @@ export const CustomerCheckout: React.FC<{
       updateCustomerProfile({ name, phone, address: fullAddress });
 
       // If payment is PIX, redirect to PIX payment screen
-      if (paymentMethod === 'Pix' && onPixPayment) {
+      if ((paymentMethod === 'Pix' || paymentMethod === 'pix') && onPixPayment) {
         setLoading(false);
         clearCart();
         onPixPayment(newOrder.id, total, new Date(newOrder.created_at));
@@ -712,8 +712,8 @@ export const CustomerCheckout: React.FC<{
                             }}
                             placeholder="0,00"
                             className={`w-full bg-white border pl-10 pr-4 py-3 rounded-xl text-sm font-bold focus:ring-2 outline-none ${showErrors && !changeFor
-                                ? 'border-red-500 focus:ring-red-500/20'
-                                : 'border-orange-200 focus:ring-orange-500'
+                              ? 'border-red-500 focus:ring-red-500/20'
+                              : 'border-orange-200 focus:ring-orange-500'
                               }`}
                           />
                         </div>
