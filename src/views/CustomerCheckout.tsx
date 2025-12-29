@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, ChevronRight, Check, MapPin, Phone, User, CreditCard, Wallet, Banknote, Clock } from 'lucide-react'; // Added Clock
+import { ArrowLeft, ChevronRight, Check, MapPin, Phone, User, CreditCard, Wallet, Banknote, Clock, Store } from 'lucide-react'; // Added Clock, Store
 import { useApp } from '../context/AppContext';
 import { OrderStatus } from '../types';
 
@@ -12,6 +12,7 @@ export const CustomerCheckout: React.FC<{
 }> = ({ onBack, onSuccess, onPixPayment }) => {
   const { cart, clearCart, storeConfig, customerProfile, updateCustomerProfile, myCoupons, prefillCoupon, setPrefillCoupon, fetchMyCoupons, isStoreOpen } = useApp(); // Added isStoreOpen
   const [step, setStep] = useState(1);
+  const [orderType, setOrderType] = useState<'delivery' | 'pickup'>('delivery');
   const [paymentMethod, setPaymentMethod] = useState('Pix');
   const [loading, setLoading] = useState(false);
   const [changeFor, setChangeFor] = useState('');
@@ -83,13 +84,15 @@ export const CustomerCheckout: React.FC<{
     if (cleanPhone.length < 10) return false;
 
     // Address
-    // Address
-    if (!street || street.trim().length === 0) return false;
-    if (!number || number.trim().length === 0) return false;
+    // Address - Only if Delivery
+    if (orderType === 'delivery') {
+      if (!street || street.trim().length === 0) return false;
+      if (!number || number.trim().length === 0) return false;
 
-    // Neighborhood
-    if (!isCustomNeighborhood && selectedFee === null) return false;
-    if (isCustomNeighborhood && (!neighborhood || neighborhood.trim().length < 2)) return false;
+      // Neighborhood
+      if (!isCustomNeighborhood && selectedFee === null) return false;
+      if (isCustomNeighborhood && (!neighborhood || neighborhood.trim().length < 2)) return false;
+    }
 
     return true;
   };
@@ -142,7 +145,7 @@ export const CustomerCheckout: React.FC<{
     return acc + ((itemBasePrice + extrasTotal) * item.quantity);
   }, 0);
 
-  const currentDeliveryFee = selectedFee ?? 0;
+  const currentDeliveryFee = orderType === 'pickup' ? 0 : (selectedFee ?? 0);
   const discount = appliedCoupon?.reward?.discountValue || 0;
 
   // Calculate Card Fees
@@ -229,7 +232,13 @@ export const CustomerCheckout: React.FC<{
         return;
       }
 
-      let fullAddress = `${street}, ${number} - ${neighborhood}`;
+      let fullAddress = '';
+
+      if (orderType === 'delivery') {
+        fullAddress = `${street}, ${number} - ${neighborhood}`;
+      } else {
+        fullAddress = 'RETIRADA NO BALCÃO';
+      }
 
       // Append Observation
       if (orderObservation.trim()) {
@@ -371,12 +380,16 @@ export const CustomerCheckout: React.FC<{
     <div className="min-h-screen bg-gray-50 animate-in slide-in-from-right duration-300">
       <header className="sticky top-0 bg-orange-500 text-white p-6 flex items-center gap-4 z-10 shadow-lg">
         <button onClick={onBack} className="p-2 hover:bg-orange-600 rounded-full transition-colors"><ArrowLeft size={20} /></button>
-        <h1 className="text-xl font-bold">{step === 1 ? 'Dados de Entrega' : 'Pagamento'}</h1>
+        <h1 className="text-xl font-bold">{step === 1 ? 'Dados do Pedido' : 'Pagamento'}</h1>
       </header>
 
       <div className="p-6 space-y-8 pb-32">
         {step === 1 ? (
           <div className="space-y-6">
+            <div className="flex gap-3 bg-white p-1 rounded-2xl shadow-sm border border-gray-100">
+              <button onClick={() => setOrderType('delivery')} className={`flex-1 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all ${orderType === 'delivery' ? 'bg-orange-500 text-white shadow-md' : 'text-slate-500 hover:bg-gray-50'}`}><MapPin size={18} /> Entrega</button>
+              <button onClick={() => setOrderType('pickup')} className={`flex-1 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all ${orderType === 'pickup' ? 'bg-orange-500 text-white shadow-md' : 'text-slate-500 hover:bg-gray-50'}`}><Store size={18} /> Retirada</button>
+            </div>
             <section className="space-y-4">
               <h3 className="text-orange-600 font-black text-sm uppercase tracking-widest flex items-center gap-2">
                 <User size={16} /> Contato
@@ -422,7 +435,7 @@ export const CustomerCheckout: React.FC<{
               </div>
             </section>
 
-            <section className="space-y-4">
+            <section className={orderType === 'pickup' ? 'hidden' : 'space-y-4'}>
               <h3 className="text-orange-600 font-black text-sm uppercase tracking-widest flex items-center gap-2">
                 <MapPin size={16} /> Endereço
               </h3>
@@ -521,6 +534,12 @@ export const CustomerCheckout: React.FC<{
                 </div>
               </div>
             </section>
+            {orderType === 'pickup' && (
+              <div className="bg-orange-50 p-6 rounded-3xl border border-orange-100 flex items-center gap-4 animate-in fade-in slide-in-from-bottom-2">
+                <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-orange-500 shadow-sm"><Store size={24} /></div>
+                <div><h3 className="font-bold text-orange-900">Retirada no Balcão</h3><p className="text-sm text-orange-700 font-medium">Seu pedido será preparado para você buscar.</p></div>
+              </div>
+            )}
           </div>
         ) : (
           <div className="space-y-6">
