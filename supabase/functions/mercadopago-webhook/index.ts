@@ -44,20 +44,31 @@ Deno.serve(async (req) => {
                 // We search by mp_payment_id
 
                 if (status === 'approved') {
-                    // Update order to PAID and PREPARING
-                    const { error } = await supabase
+                    // Fetch current order status first to prevent regression
+                    const { data: currentOrder } = await supabase
                         .from('orders')
-                        .update({
-                            payment_status: 'paid',
-                            status: 'Preparo' // Enum 'Preparo' (PREPARING)
-                        })
-                        .eq('mp_payment_id', String(paymentId));
+                        .select('status')
+                        .eq('mp_payment_id', String(paymentId))
+                        .single();
 
-                    if (error) {
-                        console.error('Error updating order:', error);
-                        return new Response('Database error', { status: 500 });
+                    if (currentOrder && currentOrder.status === 'Aguardando Pagamento') {
+                        // Update order to PAID and PENDING (so it rings alarm)
+                        const { error } = await supabase
+                            .from('orders')
+                            .update({
+                                payment_status: 'paid',
+                                status: 'Pendente' // Changed from 'Preparo' to 'Pendente' as requested
+                            })
+                            .eq('mp_payment_id', String(paymentId));
+
+                        if (error) {
+                            console.error('Error updating order:', error);
+                            return new Response('Database error', { status: 500 });
+                        }
+                        console.log(`Order updated to PENDING for payment ${paymentId}`);
+                    } else {
+                        console.log(`Skipping status update for order ${orderId} (Current: ${currentOrder?.status})`);
                     }
-                    console.log(`Order updated to PAID for payment ${paymentId}`);
                 } else {
                     // Update payment status only
                     const { error } = await supabase
