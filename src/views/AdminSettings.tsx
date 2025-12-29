@@ -11,6 +11,7 @@ export const AdminSettings: React.FC = () => {
     const [whatsapp, setWhatsapp] = useState('');
     const [storeName, setStoreName] = useState('');
     const [pixKey, setPixKey] = useState('');
+    const [address, setAddress] = useState('');
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
 
@@ -52,6 +53,7 @@ export const AdminSettings: React.FC = () => {
             setWhatsapp(storeConfig.whatsapp || '');
             setStoreName(storeConfig.name || '');
             setPixKey(storeConfig.pixKey || '');
+            setAddress(storeConfig.address || '');
             setVisualForm({
                 coverUrl: storeConfig.coverUrl || '',
                 logoUrl: storeConfig.logoUrl || ''
@@ -75,7 +77,8 @@ export const AdminSettings: React.FC = () => {
             await updateStoreConfig({
                 whatsapp,
                 name: storeName,
-                pixKey
+                pixKey,
+                address
             });
             setSaved(true);
             setTimeout(() => setSaved(false), 3000);
@@ -271,6 +274,16 @@ export const AdminSettings: React.FC = () => {
                                         value={storeName}
                                         onChange={e => setStoreName(e.target.value)}
                                         placeholder="Ex: Reino Burguer"
+                                        className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-4 text-white focus:border-blue-500 outline-none transition-all placeholder:text-slate-700 font-bold"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase ml-2 block">Endereço Completo</label>
+                                    <input
+                                        type="text"
+                                        value={address}
+                                        onChange={e => setAddress(e.target.value)}
+                                        placeholder="Ex: Rua das Flores, 123 - Centro"
                                         className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-4 text-white focus:border-blue-500 outline-none transition-all placeholder:text-slate-700 font-bold"
                                     />
                                 </div>

@@ -97,6 +97,7 @@ export interface StoreConfig {
   primaryColor: string;
   whatsapp?: string;
   pixKey?: string;
+  address?: string; // Store address for pickup
   cardFeePercent?: number; // Deprecated, keeping for backward compat if needed
   cardDebitFeePercent?: number; // New Debit Fee
   cardCreditFeePercent?: number; // New Credit Fee

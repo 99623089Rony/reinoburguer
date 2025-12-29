@@ -237,7 +237,7 @@ export const CustomerCheckout: React.FC<{
       if (orderType === 'delivery') {
         fullAddress = `${street}, ${number} - ${neighborhood}`;
       } else {
-        fullAddress = 'RETIRADA NO BALCÃO';
+        fullAddress = storeConfig?.address ? `RETIRADA EM: ${storeConfig.address}` : 'RETIRADA NO BALCÃO';
       }
 
       // Append Observation
@@ -537,7 +537,14 @@ export const CustomerCheckout: React.FC<{
             {orderType === 'pickup' && (
               <div className="bg-orange-50 p-6 rounded-3xl border border-orange-100 flex items-center gap-4 animate-in fade-in slide-in-from-bottom-2">
                 <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-orange-500 shadow-sm"><Store size={24} /></div>
-                <div><h3 className="font-bold text-orange-900">Retirada no Balcão</h3><p className="text-sm text-orange-700 font-medium">Seu pedido será preparado para você buscar.</p></div>
+                <div>
+                  <h3 className="font-bold text-orange-900">Retirada no Balcão</h3>
+                  {storeConfig?.address ? (
+                    <p className="text-xs text-orange-800 font-medium mt-1"><span className="opacity-70 uppercase tracking-wider text-[10px]">Endereço da Loja:</span><br />{storeConfig.address}</p>
+                  ) : (
+                    <p className="text-sm text-orange-700 font-medium">Seu pedido será preparado para você buscar.</p>
+                  )}
+                </div>
               </div>
             )}
           </div>
