@@ -41,9 +41,9 @@ export const AdminOrders: React.FC = () => {
   };
 
   const filteredOrders = orders.filter(o => {
-    // Hide Awaiting Payment from 'Todos' view
+    // Show ALL orders in 'Todos' view, including Awaiting Payment
     const matchesStatus = filter === 'Todos'
-      ? o.status !== OrderStatus.AWAITING_PAYMENT
+      ? true
       : o.status === filter;
     const searchLower = (search || '').toLowerCase();
     const customerMatch = (o.customerName || '').toLowerCase().includes(searchLower);
@@ -291,8 +291,8 @@ export const AdminOrders: React.FC = () => {
               key={value}
               onClick={(e) => { e.stopPropagation(); setDateFilter(value); }}
               className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap border ${dateFilter === value
-                  ? 'bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-900/20'
-                  : 'text-slate-400 border-slate-800 hover:border-slate-600 hover:text-slate-300'
+                ? 'bg-blue-600 text-white border-blue-500 shadow-lg shadow-blue-900/20'
+                : 'text-slate-400 border-slate-800 hover:border-slate-600 hover:text-slate-300'
                 }`}
             >
               {label}
