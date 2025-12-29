@@ -221,6 +221,14 @@ export const CustomerCheckout: React.FC<{
     setLoading(true);
 
     try {
+      // Validate Payment
+      if (paymentMethod === 'Dinheiro' && !changeFor) {
+        setShowErrors(true);
+        alert('Por favor, informe o troco (coloque 0 se não precisar).');
+        setLoading(false);
+        return;
+      }
+
       let fullAddress = `${street}, ${number} - ${neighborhood}`;
 
       // Append Observation
@@ -427,8 +435,8 @@ export const CustomerCheckout: React.FC<{
                     onChange={e => setStreet(e.target.value)}
                     placeholder="Digite o logradouro"
                     className={`w-full bg-white border p-4 rounded-2xl shadow-sm outline-none transition-all placeholder:text-gray-300 ${showErrors && (!street || street.trim().length === 0)
-                        ? 'border-red-500 focus:ring-2 focus:ring-red-500/20'
-                        : 'border-gray-100 focus:ring-2 focus:ring-orange-500'
+                      ? 'border-red-500 focus:ring-2 focus:ring-red-500/20'
+                      : 'border-gray-100 focus:ring-2 focus:ring-orange-500'
                       }`}
                   />
                   {showErrors && (!street || street.trim().length === 0) && (
@@ -690,7 +698,7 @@ export const CustomerCheckout: React.FC<{
                   {paymentMethod === 'Dinheiro' && (
                     <div className="animate-in slide-in-from-top-2 duration-200 pl-4 pr-1 space-y-2">
                       <div>
-                        <label className="text-[10px] font-bold text-gray-400 uppercase ml-2 mb-1 block">Troco para quanto?</label>
+                        <label className="text-[10px] font-bold text-gray-400 uppercase ml-2 mb-1 block">Troco para quanto? *</label>
                         <div className="relative">
                           <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">R$</span>
                           <input
@@ -703,9 +711,15 @@ export const CustomerCheckout: React.FC<{
                               setChangeFor(val);
                             }}
                             placeholder="0,00"
-                            className="w-full bg-white border border-orange-200 pl-10 pr-4 py-3 rounded-xl text-sm font-bold focus:ring-2 focus:ring-orange-500 outline-none"
+                            className={`w-full bg-white border pl-10 pr-4 py-3 rounded-xl text-sm font-bold focus:ring-2 outline-none ${showErrors && !changeFor
+                                ? 'border-red-500 focus:ring-red-500/20'
+                                : 'border-orange-200 focus:ring-orange-500'
+                              }`}
                           />
                         </div>
+                        {showErrors && !changeFor && (
+                          <span className="text-[10px] text-red-500 font-bold block ml-1">Obrigatório (Digite 0 se não precisar)</span>
+                        )}
                       </div>
                       {changeFor && (
                         <div className="ml-2">
