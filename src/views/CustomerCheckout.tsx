@@ -44,6 +44,7 @@ export const CustomerCheckout: React.FC<{
   // Autocomplete State
   const [suggestions, setSuggestions] = useState<typeof deliveryFees>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [showErrors, setShowErrors] = useState(false);
 
   // VALIDATION LOGIC
   const formatPhone = (val: string) => {
@@ -373,30 +374,40 @@ export const CustomerCheckout: React.FC<{
               </h3>
               <div className="space-y-3">
                 <div className="group">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase ml-4 mb-1 block">Seu Nome</label>
+                  <label className="text-[10px] font-bold text-gray-400 uppercase ml-4 mb-1 block">Seu Nome *</label>
                   <input
                     type="text"
                     value={name}
                     onChange={e => setName(e.target.value)}
                     placeholder="Ex: Ana Silva"
-                    className="w-full bg-white border border-gray-100 p-4 rounded-2xl shadow-sm focus:ring-2 focus:ring-orange-500 outline-none transition-all placeholder:text-gray-300"
+                    className={`w-full bg-white border p-4 rounded-2xl shadow-sm outline-none transition-all placeholder:text-gray-300 ${showErrors && (!name || name.trim().length < 3)
+                        ? 'border-red-500 focus:ring-2 focus:ring-red-500/20'
+                        : 'border-gray-100 focus:ring-2 focus:ring-orange-500'
+                      }`}
                   />
-                  {name.length > 0 && name.trim().length < 3 && (
-                    <span className="text-[10px] text-red-500 ml-4 font-bold">Nome deve ter pelo menos 3 caracteres</span>
+                  {showErrors && (!name || name.trim().length < 3) && (
+                    <span className="text-[10px] text-red-500 ml-4 font-bold flex items-center gap-1 mt-1">
+                      Campo obrigatório (mínimo 3 letras)
+                    </span>
                   )}
                 </div>
                 <div className="group">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase ml-4 mb-1 block">Telefone</label>
+                  <label className="text-[10px] font-bold text-gray-400 uppercase ml-4 mb-1 block">Telefone *</label>
                   <input
                     type="tel"
                     value={phone}
                     onChange={handlePhoneChange}
                     placeholder="(99) 99999-9999"
                     maxLength={15}
-                    className="w-full bg-white border border-gray-100 p-4 rounded-2xl shadow-sm focus:ring-2 focus:ring-orange-500 outline-none transition-all placeholder:text-gray-300"
+                    className={`w-full bg-white border p-4 rounded-2xl shadow-sm outline-none transition-all placeholder:text-gray-300 ${showErrors && (phone.replace(/\D/g, '').length < 10)
+                        ? 'border-red-500 focus:ring-2 focus:ring-red-500/20'
+                        : 'border-gray-100 focus:ring-2 focus:ring-orange-500'
+                      }`}
                   />
-                  {phone.length > 0 && phone.replace(/\D/g, '').length < 10 && (
-                    <span className="text-[10px] text-red-500 ml-4 font-bold">Número incompleto</span>
+                  {showErrors && (phone.replace(/\D/g, '').length < 10) && (
+                    <span className="text-[10px] text-red-500 ml-4 font-bold flex items-center gap-1 mt-1">
+                      Digite um telefone válido
+                    </span>
                   )}
                 </div>
               </div>
@@ -408,30 +419,43 @@ export const CustomerCheckout: React.FC<{
               </h3>
               <div className="grid grid-cols-12 gap-3">
                 <div className="col-span-12 group">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase ml-4 mb-1 block">Rua / Avenida</label>
+                  <label className="text-[10px] font-bold text-gray-400 uppercase ml-4 mb-1 block">Rua / Avenida *</label>
                   <input
                     type="text"
                     value={street}
                     onChange={e => setStreet(e.target.value)}
                     placeholder="Digite o logradouro"
-                    className="w-full bg-white border border-gray-100 p-4 rounded-2xl shadow-sm focus:ring-2 focus:ring-orange-500 outline-none transition-all placeholder:text-gray-300"
+                    className={`w-full bg-white border p-4 rounded-2xl shadow-sm outline-none transition-all placeholder:text-gray-300 ${showErrors && (!street || street.trim().length < 3)
+                        ? 'border-red-500 focus:ring-2 focus:ring-red-500/20'
+                        : 'border-gray-100 focus:ring-2 focus:ring-orange-500'
+                      }`}
                   />
-                  {street.length > 0 && street.trim().length < 3 && (
-                    <span className="text-[10px] text-red-500 ml-4 font-bold">Endereço deve ter pelo menos 3 caracteres</span>
+                  {showErrors && (!street || street.trim().length < 3) && (
+                    <span className="text-[10px] text-red-500 ml-4 font-bold flex items-center gap-1 mt-1">
+                      Informe o nome da rua
+                    </span>
                   )}
                 </div>
                 <div className="col-span-4 group">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase ml-4 mb-1 block">Número</label>
+                  <label className="text-[10px] font-bold text-gray-400 uppercase ml-4 mb-1 block">Número *</label>
                   <input
                     type="text"
                     value={number}
                     onChange={e => setNumber(e.target.value)}
                     placeholder="123"
-                    className="w-full bg-white border border-gray-100 p-4 rounded-2xl shadow-sm focus:ring-2 focus:ring-orange-500 outline-none transition-all placeholder:text-gray-300"
+                    className={`w-full bg-white border p-4 rounded-2xl shadow-sm outline-none transition-all placeholder:text-gray-300 ${showErrors && (!number)
+                        ? 'border-red-500 focus:ring-2 focus:ring-red-500/20'
+                        : 'border-gray-100 focus:ring-2 focus:ring-orange-500'
+                      }`}
                   />
+                  {showErrors && (!number) && (
+                    <span className="text-[10px] text-red-500 ml-4 font-bold flex items-center gap-1 mt-1">
+                      Obrigatório
+                    </span>
+                  )}
                 </div>
                 <div className="col-span-8 group">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase ml-4 mb-1 block">Bairro</label>
+                  <label className="text-[10px] font-bold text-gray-400 uppercase ml-4 mb-1 block">Bairro *</label>
 
                   <div className="relative">
                     <input
@@ -449,9 +473,17 @@ export const CustomerCheckout: React.FC<{
                         }
                       }}
                       placeholder="Digite seu bairro..."
-                      className="w-full bg-white border border-gray-100 p-4 rounded-2xl shadow-sm focus:ring-2 focus:ring-orange-500 outline-none transition-all placeholder:text-gray-300"
+                      className={`w-full bg-white border p-4 rounded-2xl shadow-sm outline-none transition-all placeholder:text-gray-300 ${showErrors && (!neighborhood)
+                          ? 'border-red-500 focus:ring-2 focus:ring-red-500/20'
+                          : 'border-gray-100 focus:ring-2 focus:ring-orange-500'
+                        }`}
                       autoComplete="off"
                     />
+                    {showErrors && (!neighborhood) && (
+                      <span className="text-[10px] text-red-500 ml-4 font-bold flex items-center gap-1 mt-1">
+                        Selecione ou digite o bairro
+                      </span>
+                    )}
 
                     {/* Suggestions List */}
                     {showSuggestions && suggestions.length > 0 && (
@@ -696,9 +728,21 @@ export const CustomerCheckout: React.FC<{
 
       <div className="fixed bottom-0 left-0 right-0 p-6 bg-white border-t border-gray-100 max-w-md mx-auto z-20">
         <button
-          onClick={() => step === 1 ? setStep(2) : handleFinish()}
-          disabled={loading || (step === 1 && !validateForm())}
-          className={`w-full py-5 rounded-3xl font-black shadow-2xl transition-all flex items-center justify-center gap-2 ${loading || (step === 1 && !validateForm())
+          onClick={() => {
+            if (step === 1) {
+              if (validateForm()) {
+                setStep(2);
+                setShowErrors(false);
+              } else {
+                setShowErrors(true);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }
+            } else {
+              handleFinish();
+            }
+          }}
+          disabled={loading}
+          className={`w-full py-5 rounded-3xl font-black shadow-2xl transition-all flex items-center justify-center gap-2 ${loading
             ? 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none'
             : 'bg-orange-500 text-white shadow-orange-200 active:scale-95'
             }`}
