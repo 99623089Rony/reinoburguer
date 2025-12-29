@@ -38,8 +38,8 @@ interface AppContextType {
   addExtrasGroup: (name: string, min: number, max: number) => Promise<void>;
   updateExtrasGroup: (id: string, name: string, min: number, max: number) => Promise<void>;
   deleteExtrasGroup: (id: string) => Promise<void>;
-  addExtraOption: (groupId: string, name: string, price: number) => Promise<void>;
-  updateExtraOption: (id: string, name: string, price: number) => Promise<void>;
+  addExtraOption: (groupId: string, name: string, price: number, maxQuantity?: number) => Promise<void>;
+  updateExtraOption: (id: string, name: string, price: number, maxQuantity?: number) => Promise<void>;
   deleteExtraOption: (id: string) => Promise<void>;
   productExtras: { product_id: string, group_id: string }[];
   toggleProductExtra: (productId: string, groupId: string, isSelected: boolean) => Promise<void>;
@@ -345,7 +345,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const fetchExtrasGroups = useCallback(async () => {
     const { data, error } = await supabase.from('extras_groups').select('*, extras_options(*)').order('name');
-    if (!error) setExtrasGroups(data.map((g: any) => ({ id: g.id, name: g.name, minSelection: g.min_selection, maxSelection: g.max_selection, options: g.extras_options.map((o: any) => ({ id: o.id, name: o.name, price: o.price, description: o.description })) })));
+    if (!error) setExtrasGroups(data.map((g: any) => ({ id: g.id, name: g.name, minSelection: g.min_selection, maxSelection: g.max_selection, options: g.extras_options.map((o: any) => ({ id: o.id, name: o.name, price: o.price, description: o.description, maxQuantity: o.max_quantity })) })));
   }, []);
 
   const fetchOpeningHours = useCallback(async () => {
@@ -682,8 +682,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       extrasGroups, addExtrasGroup: async (n, min, max) => { await supabase.from('extras_groups').insert([{ name: n, min_selection: min, max_selection: max }]); fetchExtrasGroups(); },
       updateExtrasGroup: async (id, n, min, max) => { await supabase.from('extras_groups').update({ name: n, min_selection: min, max_selection: max }).eq('id', id); fetchExtrasGroups(); },
       deleteExtrasGroup: async (id) => { await supabase.from('extras_groups').delete().eq('id', id); fetchExtrasGroups(); },
-      addExtraOption: async (gi, n, p) => { await supabase.from('extras_options').insert([{ group_id: gi, name: n, price: p }]); fetchExtrasGroups(); },
-      updateExtraOption: async (id, n, p) => { await supabase.from('extras_options').update({ name: n, price: p }).eq('id', id); fetchExtrasGroups(); },
+      addExtraOption: async (gi, n, p, mq = 1) => { await supabase.from('extras_options').insert([{ group_id: gi, name: n, price: p, max_quantity: mq }]); fetchExtrasGroups(); },
+      updateExtraOption: async (id, n, p, mq = 1) => { await supabase.from('extras_options').update({ name: n, price: p, max_quantity: mq }).eq('id', id); fetchExtrasGroups(); },
       deleteExtraOption: async (id) => { await supabase.from('extras_options').delete().eq('id', id); fetchExtrasGroups(); },
       productExtras, toggleProductExtra: async (pi, gi, s) => { if (s) await supabase.from('product_extras').insert([{ product_id: pi, group_id: gi }]); else await supabase.from('product_extras').delete().match({ product_id: pi, group_id: gi }); fetchProductExtras(); },
       setOpeningHours, openingHours, updateOpeningHour: async (h) => { await supabase.from('opening_hours').update({ open_time: h.open_time, close_time: h.close_time, is_closed: h.is_closed }).eq('id', h.id); fetchOpeningHours(); },

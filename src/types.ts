@@ -130,6 +130,7 @@ export interface ExtraOption {
   name: string;
   price: number;
   description?: string;
+  maxQuantity?: number;
 }
 
 export interface OpeningHour {

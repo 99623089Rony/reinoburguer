@@ -36,23 +36,46 @@ export const CustomerCart: React.FC<{ onCheckout: () => void }> = ({ onCheckout 
     setEditingItem(null);
   };
 
-  const handleToggleExtra = (group: ExtraGroup, option: ExtraOption) => {
-    const currentInGroup = selectedExtras.filter(e => group.options.some(o => o.id === e.id));
-    const isSelected = selectedExtras.some(e => e.id === option.id);
+  const handleUpdateExtraQuantity = (group: ExtraGroup, option: ExtraOption, delta: number) => {
+    const currentQty = selectedExtras.filter(e => e.id === option.id).length;
+    const currentInGroup = selectedExtras.filter(e => group.options.some(o => o.id === e.id)).length;
 
-    if (isSelected) {
-      setSelectedExtras(prev => prev.filter(e => e.id !== option.id));
-    } else {
-      if (group.maxSelection > 1 && currentInGroup.length >= group.maxSelection) {
-        alert(`Você só pode escolher até ${group.maxSelection} opções neste grupo.`);
-        return;
-      }
+    if (delta > 0) {
+      // Adding
+
+      // Special case: If group only allows 1 item, treat as valid switch (Radio behavior)
       if (group.maxSelection === 1) {
         const others = selectedExtras.filter(e => !group.options.some(o => o.id === e.id));
         setSelectedExtras([...others, option]);
-      } else {
-        setSelectedExtras(prev => [...prev, option]);
+        return;
       }
+
+      // Check Group Max
+      if (group.maxSelection > 0 && currentInGroup >= group.maxSelection) {
+        alert(`Você só pode escolher até ${group.maxSelection} opções neste grupo.`);
+        return;
+      }
+
+      // Check Item Max
+      const maxQty = option.maxQuantity || 1;
+      if (currentQty >= maxQty) {
+        if (maxQty > 1) alert(`Máximo de ${maxQty} unidades para este item.`);
+        return;
+      }
+
+      setSelectedExtras(prev => [...prev, option]);
+
+    } else {
+      // Removing
+      if (currentQty === 0) return;
+
+      setSelectedExtras(prev => {
+        const idx = prev.findIndex(e => e.id === option.id);
+        if (idx === -1) return prev;
+        const newArr = [...prev];
+        newArr.splice(idx, 1);
+        return newArr;
+      });
     }
   };
 
@@ -211,8 +234,8 @@ export const CustomerCart: React.FC<{ onCheckout: () => void }> = ({ onCheckout 
           onClick={onCheckout}
           disabled={!isStoreOpen}
           className={`w-full py-5 rounded-3xl font-black shadow-2xl transition-all transform ${isStoreOpen
-              ? 'bg-orange-500 text-white shadow-orange-200 active:scale-95 hover:-translate-y-1'
-              : 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none'
+            ? 'bg-orange-500 text-white shadow-orange-200 active:scale-95 hover:-translate-y-1'
+            : 'bg-gray-300 text-gray-500 cursor-not-allowed shadow-none'
             }`}
         >
           {isStoreOpen ? 'Ir para o Checkout' : 'Loja Fechada'}
@@ -263,16 +286,31 @@ export const CustomerCart: React.FC<{ onCheckout: () => void }> = ({ onCheckout 
                       </div>
                       <div className="space-y-2">
                         {group.options.map(option => {
-                          const isSelected = selectedExtras.some(e => e.id === option.id);
+                          const qty = selectedExtras.filter(e => e.id === option.id).length;
+                          const isSelected = qty > 0;
                           return (
-                            <div key={option.id} onClick={() => handleToggleExtra(group, option)} className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${isSelected ? 'border-orange-500 bg-orange-50' : 'border-gray-100 bg-white'}`}>
-                              <div className="flex items-center gap-3">
-                                <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${isSelected ? 'bg-orange-500 border-orange-500' : 'border-gray-300'}`}>
-                                  {isSelected && <Check size={12} className="text-white" />}
-                                </div>
+                            <div key={option.id} className={`flex items-center justify-between p-3 rounded-xl border transition-all ${isSelected ? 'border-orange-500 bg-orange-50' : 'border-gray-100 bg-white'}`}>
+                              <div className="flex-1">
                                 <span className={`text-sm font-medium ${isSelected ? 'text-slate-900' : 'text-slate-600'}`}>{option.name}</span>
+                                <div className="text-orange-600 font-bold text-sm">+ R$ {option.price.toFixed(2).replace('.', ',')}</div>
                               </div>
-                              <span className="text-orange-600 font-bold text-sm">+ R$ {option.price.toFixed(2).replace('.', ',')}</span>
+
+                              <div className="flex items-center gap-3 bg-white rounded-lg border border-gray-100 p-1 shadow-sm">
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); handleUpdateExtraQuantity(group, option, -1); }}
+                                  className={`w-8 h-8 flex items-center justify-center rounded-md transition-colors ${qty > 0 ? 'bg-orange-100 text-orange-600 hover:bg-orange-200' : 'bg-gray-50 text-gray-300'}`}
+                                  disabled={qty === 0}
+                                >
+                                  <Minus size={14} />
+                                </button>
+                                <span className="font-bold text-slate-800 w-6 text-center">{qty}</span>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); handleUpdateExtraQuantity(group, option, 1); }}
+                                  className="w-8 h-8 flex items-center justify-center rounded-md bg-orange-500 text-white hover:bg-orange-600 transition-colors shadow-sm"
+                                >
+                                  <Plus size={14} />
+                                </button>
+                              </div>
                             </div>
                           );
                         })}

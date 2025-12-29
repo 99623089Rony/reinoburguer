@@ -177,12 +177,13 @@ export const AdminMenu: React.FC = () => {
     const [newGroupMax, setNewGroupMax] = useState(1);
     const [newOptionName, setNewOptionName] = useState('');
     const [newOptionPrice, setNewOptionPrice] = useState('');
+    const [newOptionMaxQuantity, setNewOptionMaxQuantity] = useState(1);
     const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
 
     const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
     const [editingGroupForm, setEditingGroupForm] = useState({ name: '', min: 0, max: 1 });
     const [editingOptionId, setEditingOptionId] = useState<string | null>(null);
-    const [editingOptionForm, setEditingOptionForm] = useState({ name: '', price: '' });
+    const [editingOptionForm, setEditingOptionForm] = useState({ name: '', price: '', maxQuantity: 1 });
 
     const handleAddGroup = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -198,9 +199,10 @@ export const AdminMenu: React.FC = () => {
         e.preventDefault();
         if (newOptionName.trim()) {
             const price = parseFloat(newOptionPrice.replace(',', '.')) || 0;
-            await addExtraOption(groupId, newOptionName, price);
+            await addExtraOption(groupId, newOptionName, price, newOptionMaxQuantity);
             setNewOptionName('');
             setNewOptionPrice('');
+            setNewOptionMaxQuantity(1);
         }
     };
 
@@ -210,7 +212,7 @@ export const AdminMenu: React.FC = () => {
     };
 
     const handleUpdateOption = async (id: string) => {
-        await updateExtraOption(id, editingOptionForm.name, parseFloat(editingOptionForm.price.replace(',', '.')) || 0);
+        await updateExtraOption(id, editingOptionForm.name, parseFloat(editingOptionForm.price.replace(',', '.')) || 0, editingOptionForm.maxQuantity);
         setEditingOptionId(null);
     };
 
@@ -281,8 +283,8 @@ export const AdminMenu: React.FC = () => {
                             <button
                                 onClick={() => setSelectedCategory('Todas')}
                                 className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap border ${selectedCategory === 'Todas'
-                                        ? 'bg-orange-600 text-white border-orange-500 shadow-lg shadow-orange-900/20'
-                                        : 'text-slate-400 border-slate-800 hover:border-slate-600 hover:text-slate-300'
+                                    ? 'bg-orange-600 text-white border-orange-500 shadow-lg shadow-orange-900/20'
+                                    : 'text-slate-400 border-slate-800 hover:border-slate-600 hover:text-slate-300'
                                     }`}
                             >
                                 Todas ({products.length})
@@ -294,8 +296,8 @@ export const AdminMenu: React.FC = () => {
                                         key={cat.id}
                                         onClick={() => setSelectedCategory(cat.name)}
                                         className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap border ${selectedCategory === cat.name
-                                                ? 'bg-orange-600 text-white border-orange-500 shadow-lg shadow-orange-900/20'
-                                                : 'text-slate-400 border-slate-800 hover:border-slate-600 hover:text-slate-300'
+                                            ? 'bg-orange-600 text-white border-orange-500 shadow-lg shadow-orange-900/20'
+                                            : 'text-slate-400 border-slate-800 hover:border-slate-600 hover:text-slate-300'
                                             }`}
                                     >
                                         {cat.name} ({count})
@@ -581,6 +583,15 @@ export const AdminMenu: React.FC = () => {
                                                                     value={editingOptionForm.price}
                                                                     onChange={e => setEditingOptionForm({ ...editingOptionForm, price: e.target.value })}
                                                                 />
+                                                                <div className="flex flex-col w-12">
+                                                                    <label className="text-[8px] text-slate-500 uppercase font-bold text-center">Max</label>
+                                                                    <input
+                                                                        type="number"
+                                                                        className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2 py-1 text-xs text-white focus:border-orange-500 text-center"
+                                                                        value={editingOptionForm.maxQuantity}
+                                                                        onChange={e => setEditingOptionForm({ ...editingOptionForm, maxQuantity: parseInt(e.target.value) || 1 })}
+                                                                    />
+                                                                </div>
                                                                 <button onClick={() => handleUpdateOption(opt.id)} className="text-emerald-500">
                                                                     <Save size={14} />
                                                                 </button>
@@ -590,10 +601,11 @@ export const AdminMenu: React.FC = () => {
                                                                 <span className="text-slate-300">{opt.name}</span>
                                                                 <div className="flex items-center gap-3">
                                                                     <span className="text-slate-400 font-bold">R$ {opt.price.toFixed(2).replace('.', ',')}</span>
+                                                                    <span className="text-[10px] text-slate-500 border border-slate-800 rounded px-1" title="Quantidade Máxima">x{opt.maxQuantity || 1}</span>
                                                                     <div className="flex gap-2 opacity-0 group-hover/opt:opacity-100 transition-opacity">
                                                                         <button onClick={() => {
                                                                             setEditingOptionId(opt.id);
-                                                                            setEditingOptionForm({ name: opt.name, price: opt.price.toString().replace('.', ',') });
+                                                                            setEditingOptionForm({ name: opt.name, price: opt.price.toString().replace('.', ','), maxQuantity: opt.maxQuantity || 1 });
                                                                         }} className="text-slate-600 hover:text-white"><Edit2 size={14} /></button>
                                                                         <button onClick={() => deleteExtraOption(opt.id)} className="text-slate-600 hover:text-red-500"><Trash2 size={14} /></button>
                                                                     </div>
@@ -619,6 +631,15 @@ export const AdminMenu: React.FC = () => {
                                                     onChange={e => setNewOptionPrice(e.target.value)}
                                                     placeholder="R$ 0,00"
                                                     className="w-20 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:border-orange-500 outline-none"
+                                                />
+                                                <input
+                                                    type="number"
+                                                    value={newOptionMaxQuantity}
+                                                    min="1"
+                                                    onChange={e => setNewOptionMaxQuantity(parseInt(e.target.value) || 1)}
+                                                    placeholder="Max"
+                                                    title="Máximo por item"
+                                                    className="w-14 bg-slate-900 border border-slate-800 rounded-lg px-2 py-2 text-xs text-white focus:border-orange-500 outline-none text-center"
                                                 />
                                                 <button type="submit" className="bg-orange-600 text-white p-2 rounded-lg hover:bg-orange-500"><Plus size={14} /></button>
                                             </form>
