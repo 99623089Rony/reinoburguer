@@ -381,8 +381,8 @@ export const CustomerCheckout: React.FC<{
                     onChange={e => setName(e.target.value)}
                     placeholder="Ex: Ana Silva"
                     className={`w-full bg-white border p-4 rounded-2xl shadow-sm outline-none transition-all placeholder:text-gray-300 ${showErrors && (!name || name.trim().length < 3)
-                        ? 'border-red-500 focus:ring-2 focus:ring-red-500/20'
-                        : 'border-gray-100 focus:ring-2 focus:ring-orange-500'
+                      ? 'border-red-500 focus:ring-2 focus:ring-red-500/20'
+                      : 'border-gray-100 focus:ring-2 focus:ring-orange-500'
                       }`}
                   />
                   {showErrors && (!name || name.trim().length < 3) && (
@@ -400,8 +400,8 @@ export const CustomerCheckout: React.FC<{
                     placeholder="(99) 99999-9999"
                     maxLength={15}
                     className={`w-full bg-white border p-4 rounded-2xl shadow-sm outline-none transition-all placeholder:text-gray-300 ${showErrors && (phone.replace(/\D/g, '').length < 10)
-                        ? 'border-red-500 focus:ring-2 focus:ring-red-500/20'
-                        : 'border-gray-100 focus:ring-2 focus:ring-orange-500'
+                      ? 'border-red-500 focus:ring-2 focus:ring-red-500/20'
+                      : 'border-gray-100 focus:ring-2 focus:ring-orange-500'
                       }`}
                   />
                   {showErrors && (phone.replace(/\D/g, '').length < 10) && (
@@ -426,8 +426,8 @@ export const CustomerCheckout: React.FC<{
                     onChange={e => setStreet(e.target.value)}
                     placeholder="Digite o logradouro"
                     className={`w-full bg-white border p-4 rounded-2xl shadow-sm outline-none transition-all placeholder:text-gray-300 ${showErrors && (!street || street.trim().length < 3)
-                        ? 'border-red-500 focus:ring-2 focus:ring-red-500/20'
-                        : 'border-gray-100 focus:ring-2 focus:ring-orange-500'
+                      ? 'border-red-500 focus:ring-2 focus:ring-red-500/20'
+                      : 'border-gray-100 focus:ring-2 focus:ring-orange-500'
                       }`}
                   />
                   {showErrors && (!street || street.trim().length < 3) && (
@@ -440,12 +440,13 @@ export const CustomerCheckout: React.FC<{
                   <label className="text-[10px] font-bold text-gray-400 uppercase ml-4 mb-1 block">Número *</label>
                   <input
                     type="text"
+                    inputMode="numeric"
                     value={number}
-                    onChange={e => setNumber(e.target.value)}
+                    onChange={e => setNumber(e.target.value.replace(/\D/g, ''))}
                     placeholder="123"
                     className={`w-full bg-white border p-4 rounded-2xl shadow-sm outline-none transition-all placeholder:text-gray-300 ${showErrors && (!number)
-                        ? 'border-red-500 focus:ring-2 focus:ring-red-500/20'
-                        : 'border-gray-100 focus:ring-2 focus:ring-orange-500'
+                      ? 'border-red-500 focus:ring-2 focus:ring-red-500/20'
+                      : 'border-gray-100 focus:ring-2 focus:ring-orange-500'
                       }`}
                   />
                   {showErrors && (!number) && (
@@ -474,8 +475,8 @@ export const CustomerCheckout: React.FC<{
                       }}
                       placeholder="Digite seu bairro..."
                       className={`w-full bg-white border p-4 rounded-2xl shadow-sm outline-none transition-all placeholder:text-gray-300 ${showErrors && (!neighborhood)
-                          ? 'border-red-500 focus:ring-2 focus:ring-red-500/20'
-                          : 'border-gray-100 focus:ring-2 focus:ring-orange-500'
+                        ? 'border-red-500 focus:ring-2 focus:ring-red-500/20'
+                        : 'border-gray-100 focus:ring-2 focus:ring-orange-500'
                         }`}
                       autoComplete="off"
                     />
@@ -693,8 +694,13 @@ export const CustomerCheckout: React.FC<{
                           <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">R$</span>
                           <input
                             type="text"
+                            inputMode="decimal"
                             value={changeFor}
-                            onChange={e => setChangeFor(e.target.value)}
+                            onChange={e => {
+                              // Allow only numbers and one comma/dot
+                              const val = e.target.value.replace(/[^0-9.,]/g, '');
+                              setChangeFor(val);
+                            }}
                             placeholder="0,00"
                             className="w-full bg-white border border-orange-200 pl-10 pr-4 py-3 rounded-xl text-sm font-bold focus:ring-2 focus:ring-orange-500 outline-none"
                           />
