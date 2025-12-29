@@ -72,7 +72,6 @@ interface AppContextType {
   paymentData: { orderId: string; amount: number; createdAt: Date } | null;
   openPayment: (orderId: string, amount: number, createdAt: Date) => void;
   closePayment: () => void;
-  closePayment: () => void;
   loginCustomer: (phone: string) => Promise<boolean>;
   audioUnlocked: boolean; // Exposed to show UI warning
 }
