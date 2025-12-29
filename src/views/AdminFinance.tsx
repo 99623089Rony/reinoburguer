@@ -5,7 +5,8 @@ import { DollarSign, TrendingUp, TrendingDown, Plus, Calendar, ArrowUpRight, Arr
 export const AdminFinance: React.FC = () => {
     const { transactions, addTransaction } = useApp();
     const [showAddModal, setShowAddModal] = useState(false);
-    const [dateFilter, setDateFilter] = useState<'today' | 'week' | 'month' | 'all'>('today');
+    const [dateFilter, setDateFilter] = useState<'today' | 'week' | 'month' | 'all' | 'custom'>('today');
+    const [customDate, setCustomDate] = useState(new Date().toISOString().split('T')[0]);
     const [newTransaction, setNewTransaction] = useState({
         type: 'INCOME' as 'INCOME' | 'EXPENSE',
         amount: '',
@@ -32,6 +33,8 @@ export const AdminFinance: React.FC = () => {
                 const monthAgo = new Date(now);
                 monthAgo.setMonth(monthAgo.getMonth() - 1);
                 return target >= monthAgo;
+            case 'custom':
+                return target.toISOString().split('T')[0] === customDate;
             case 'all':
                 return true;
         }
@@ -39,7 +42,7 @@ export const AdminFinance: React.FC = () => {
 
     const filteredTransactions = useMemo(() => {
         return transactions.filter(t => filterByDate(new Date(t.createdAt)));
-    }, [transactions, dateFilter]);
+    }, [transactions, dateFilter, customDate]);
 
     const summary = useMemo(() => {
         // Balance is always ALL TIME
@@ -78,6 +81,7 @@ export const AdminFinance: React.FC = () => {
             case 'today': return 'Hoje';
             case 'week': return 'Última Semana';
             case 'month': return 'Último Mês';
+            case 'custom': return new Date(customDate).toLocaleDateString();
             case 'all': return 'Total';
         }
     };
@@ -109,6 +113,27 @@ export const AdminFinance: React.FC = () => {
                             {f.label}
                         </button>
                     ))}
+
+                    <div className="relative">
+                        <button
+                            onClick={() => setDateFilter('custom')}
+                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap border flex items-center gap-2 ${dateFilter === 'custom'
+                                ? 'bg-emerald-500 text-white border-emerald-500 shadow-lg shadow-emerald-500/20'
+                                : 'text-slate-400 border-slate-800 hover:border-slate-700 hover:text-slate-300'
+                                }`}
+                        >
+                            <Calendar size={14} /> Data
+                        </button>
+                        {dateFilter === 'custom' && (
+                            <input
+                                type="date"
+                                value={customDate}
+                                onChange={(e) => setCustomDate(e.target.value)}
+                                className="absolute right-0 top-full mt-2 bg-slate-800 text-white border border-slate-700 rounded-xl p-2 z-20 shadow-xl outline-none"
+                            />
+                        )}
+                    </div>
+
                     <div className="w-px h-8 bg-slate-800 mx-2 hidden md:block"></div>
                     <button
                         onClick={() => setShowAddModal(true)}
