@@ -119,13 +119,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (mergedProfile.phone) {
       console.log('🚀 Syncing profile for:', mergedProfile.phone);
       try {
-        const { error } = await supabase.from('customers').upsert({
+        const payload: any = {
           name: mergedProfile.name,
           phone: mergedProfile.phone,
-          address: mergedProfile.address,
-          // We don't overwrite points/spent here, the database will keep existing values
-          // unless it's a new record where these default to 0
-        }, { onConflict: 'phone' });
+        };
+
+        // Only save address if it's NOT a pickup
+        if (mergedProfile.address && !mergedProfile.address.toUpperCase().startsWith('RETIRADA')) {
+          payload.address = mergedProfile.address;
+        }
+
+        const { error } = await supabase.from('customers').upsert(payload, { onConflict: 'phone' });
 
         if (error) throw error;
         console.log('✅ Sync successful');
@@ -449,7 +453,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const syncCustomer = useCallback(async (order: Order) => {
     const { data: existing } = await supabase.from('customers').select('*').eq('phone', order.phone).maybeSingle();
     if (existing) {
-      await supabase.from('customers').update({ total_spent: Number(existing.total_spent) + order.total, name: order.customerName, address: order.address }).eq('id', existing.id);
+      const updateData: any = { total_spent: Number(existing.total_spent) + order.total, name: order.customerName };
+      // Only update address if it looks like a delivery address (not Pickup)
+      if (order.address && !order.address.toUpperCase().startsWith('RETIRADA')) {
+        updateData.address = order.address;
+      }
+      await supabase.from('customers').update(updateData).eq('id', existing.id);
     } else {
       await supabase.from('customers').insert([{ name: order.customerName, phone: order.phone, address: order.address, total_spent: order.total, points: 0 }]);
     }

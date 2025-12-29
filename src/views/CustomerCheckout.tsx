@@ -102,6 +102,9 @@ export const CustomerCheckout: React.FC<{
       if (!phone) setPhone(customerProfile.phone || '');
 
       if (customerProfile.address && !street && !number && !neighborhood) {
+        // Ignore Pickup addresses
+        if (customerProfile.address.toUpperCase().startsWith('RETIRADA')) return;
+
         try {
           const parts = customerProfile.address.split(',');
           if (parts.length >= 2) {
@@ -294,7 +297,11 @@ export const CustomerCheckout: React.FC<{
       }
 
       // Update local profile with latest data
-      updateCustomerProfile({ name, phone, address: fullAddress });
+      if (orderType === 'delivery') {
+        updateCustomerProfile({ name, phone, address: fullAddress });
+      } else {
+        updateCustomerProfile({ name, phone });
+      }
 
       // If payment is PIX, redirect to PIX payment screen
       if ((paymentMethod === 'Pix' || paymentMethod === 'pix') && onPixPayment) {
