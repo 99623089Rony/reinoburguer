@@ -72,7 +72,9 @@ interface AppContextType {
   paymentData: { orderId: string; amount: number; createdAt: Date } | null;
   openPayment: (orderId: string, amount: number, createdAt: Date) => void;
   closePayment: () => void;
+  closePayment: () => void;
   loginCustomer: (phone: string) => Promise<boolean>;
+  audioUnlocked: boolean; // Exposed to show UI warning
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -598,7 +600,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   return (
     <AppContext.Provider value={{
       products, setProducts, orders, setOrders, cart, addToCart, removeFromCart, updateCartQuantity: (id, d) => setCart(p => p.map(i => i.cartId === id ? { ...i, quantity: Math.max(1, i.quantity + d) } : i)), updateCartItem: (id, u) => setCart(p => p.map(i => i.cartId === id ? { ...i, ...u } : i)), clearCart,
-      view, setView, customers, fetchCustomers,
+      view, setView, customers, fetchCustomers, audioUnlocked,
       updateCustomerPoints: async (id, points) => { await supabase.from('customers').update({ points }).eq('id', id); fetchCustomers(); },
       customerProfile: (customers.find(c => c.phone === customerProfile?.phone))
         ? { ...customerProfile, ...(customers.find(c => c.phone === customerProfile?.phone)) }

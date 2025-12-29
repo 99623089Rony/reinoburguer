@@ -29,7 +29,7 @@ interface AdminSidebarProps {
 }
 
 export const AdminSidebar: React.FC<AdminSidebarProps> = ({ activeTab, onTabChange }) => {
-    const { playNotificationSound } = useApp();
+    const { playNotificationSound, audioUnlocked } = useApp();
     const { storeConfig } = useApp();
     const handleLogout = async () => {
         await supabase.auth.signOut();
@@ -77,6 +77,15 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ activeTab, onTabChan
             </nav>
 
             <div className="p-4 border-t border-slate-800 space-y-2 flex-shrink-0">
+                {!audioUnlocked && (
+                    <button
+                        onClick={() => playNotificationSound()}
+                        className="flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors animate-pulse mb-2"
+                    >
+                        <span className="text-xl">🔇</span>
+                        <span className="font-bold text-sm">Ativar Som do Pedido</span>
+                    </button>
+                )}
                 <button
                     onClick={async () => {
                         if ('Notification' in window) {
