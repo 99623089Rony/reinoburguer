@@ -152,13 +152,20 @@ export const CustomerHome: React.FC = () => {
                     <p className="text-slate-500 text-[10px] leading-relaxed line-clamp-2">{product.description}</p>
                     <button
                       onClick={() => setSelectedProduct(product)}
-                      className="flex items-center gap-1 text-[10px] font-bold text-orange-500 mt-2 hover:underline"
+                      className="px-3 py-1 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 text-[10px] font-bold transition-all active:scale-95 flex items-center gap-1 mt-2 w-fit"
                     >
                       <Info size={12} /> Ver detalhes
                     </button>
                   </div>
-                  <div className="flex items-center justify-between mt-2">
+                  <div className="flex items-center justify-between mt-2 gap-2">
                     <span className="text-orange-600 font-extrabold text-sm">R$ {product.price.toFixed(2).replace('.', ',')}</span>
+
+                    <button
+                      onClick={() => setSelectedProduct(product)}
+                      className="px-3 py-2 rounded-xl bg-amber-400 hover:bg-amber-500 text-white text-[10px] font-bold shadow-lg shadow-amber-200 transition-all active:scale-95 flex items-center gap-1"
+                    >
+                      <Info size={14} /> Detalhes
+                    </button>
 
                     {product.inStock ? (
                       getInCartQty(product.id) > 0 ? (
@@ -185,103 +192,106 @@ export const CustomerHome: React.FC = () => {
                   </div>
                 </div>
               </div>
-            ))
-          ) : (
-            <div className="text-center py-10 text-gray-400 text-sm">
-              Nenhum item nesta categoria.
-            </div>
-          )}
+              </div>
+        ))
+        ) : (
+        <div className="text-center py-10 text-gray-400 text-sm">
+          Nenhum item nesta categoria.
         </div>
+          )}
       </div>
+    </div>
 
-      {/* Product Details Modal */}
-      {selectedProduct && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center pointer-events-none">
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-black/80 backdrop-blur-sm pointer-events-auto animate-in fade-in duration-300"
+      {/* Product Details Modal */ }
+  {
+    selectedProduct && (
+      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center pointer-events-none">
+        {/* Backdrop */}
+        <div
+          className="absolute inset-0 bg-black/80 backdrop-blur-sm pointer-events-auto animate-in fade-in duration-300"
+          onClick={() => setSelectedProduct(null)}
+        />
+
+        {/* Modal Content */}
+        <div className="bg-white w-full max-w-md max-h-[90vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl pointer-events-auto relative shadow-2xl animate-in slide-in-from-bottom-10 sm:zoom-in-95 duration-300">
+
+          {/* Close Button */}
+          <button
             onClick={() => setSelectedProduct(null)}
-          />
+            className="absolute top-4 right-4 z-10 w-8 h-8 bg-black/20 hover:bg-black/40 backdrop-blur-md rounded-full flex items-center justify-center text-white transition-all"
+          >
+            <X size={18} />
+          </button>
 
-          {/* Modal Content */}
-          <div className="bg-white w-full max-w-md max-h-[90vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl pointer-events-auto relative shadow-2xl animate-in slide-in-from-bottom-10 sm:zoom-in-95 duration-300">
+          {/* Image */}
+          <div className="h-64 relative bg-gray-100">
+            <img
+              src={selectedProduct.image}
+              alt={selectedProduct.name}
+              className="w-full h-full object-cover"
+            />
+            {!selectedProduct.inStock && (
+              <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                <span className="text-white text-sm font-bold uppercase border-2 border-white px-3 py-1 rounded-lg">Esgotado</span>
+              </div>
+            )}
+          </div>
 
-            {/* Close Button */}
-            <button
-              onClick={() => setSelectedProduct(null)}
-              className="absolute top-4 right-4 z-10 w-8 h-8 bg-black/20 hover:bg-black/40 backdrop-blur-md rounded-full flex items-center justify-center text-white transition-all"
-            >
-              <X size={18} />
-            </button>
+          <div className="p-6 pb-24 sm:pb-6 space-y-6">
+            <div>
+              <h3 className="text-2xl font-black text-slate-900 leading-tight">{selectedProduct.name}</h3>
+              <span className="text-orange-600 font-extrabold text-xl block mt-1">
+                R$ {selectedProduct.price.toFixed(2).replace('.', ',')}
+              </span>
+            </div>
 
-            {/* Image */}
-            <div className="h-64 relative bg-gray-100">
-              <img
-                src={selectedProduct.image}
-                alt={selectedProduct.name}
-                className="w-full h-full object-cover"
-              />
-              {!selectedProduct.inStock && (
-                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                  <span className="text-white text-sm font-bold uppercase border-2 border-white px-3 py-1 rounded-lg">Esgotado</span>
+            <div className="space-y-2">
+              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Descrição & Ingredientes</h4>
+              <p className="text-slate-600 leading-relaxed text-sm">
+                {selectedProduct.description}
+              </p>
+            </div>
+
+            {/* Action Bar */}
+            <div className="space-y-3 pt-4 border-t border-gray-100">
+              {selectedProduct.inStock ? (
+                getInCartQty(selectedProduct.id) > 0 ? (
+                  <div className="flex items-center justify-between p-4 bg-orange-50 rounded-2xl">
+                    <span className="font-bold text-orange-700 text-sm">Já no carrinho:</span>
+                    <div className="flex items-center gap-4 bg-white rounded-xl px-2 py-1 shadow-sm">
+                      <button onClick={() => addToCart(selectedProduct, -1)} className="w-8 h-8 flex items-center justify-center text-orange-500 font-bold hover:bg-orange-50 rounded-lg"><Minus size={16} /></button>
+                      <span className="text-lg font-black text-slate-800 w-4 text-center">{getInCartQty(selectedProduct.id)}</span>
+                      <button onClick={() => addToCart(selectedProduct, 1)} className="w-8 h-8 flex items-center justify-center text-orange-500 font-bold hover:bg-orange-50 rounded-lg"><Plus size={16} /></button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => {
+                      if (isStoreOpen) {
+                        addToCart(selectedProduct);
+                        setSelectedProduct(null); // Close modal after adding (optional UX choice)
+                      } else {
+                        alert('A loja está fechada.');
+                      }
+                    }}
+                    disabled={!isStoreOpen}
+                    className={`w-full py-4 rounded-xl font-black text-white shadow-xl transition-all active:scale-95 flex items-center justify-center gap-2 ${isStoreOpen ? 'bg-orange-500 hover:bg-orange-600 shadow-orange-200' : 'bg-gray-300 cursor-not-allowed'
+                      }`}
+                  >
+                    <Plus size={20} /> {isStoreOpen ? 'Adicionar ao Carrinho' : 'Loja Fechada'}
+                  </button>
+                )
+              ) : (
+                <div className="w-full py-4 bg-gray-100 rounded-xl text-center font-bold text-gray-400">
+                  Produto Indisponível
                 </div>
               )}
             </div>
-
-            <div className="p-6 pb-24 sm:pb-6 space-y-6">
-              <div>
-                <h3 className="text-2xl font-black text-slate-900 leading-tight">{selectedProduct.name}</h3>
-                <span className="text-orange-600 font-extrabold text-xl block mt-1">
-                  R$ {selectedProduct.price.toFixed(2).replace('.', ',')}
-                </span>
-              </div>
-
-              <div className="space-y-2">
-                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Descrição & Ingredientes</h4>
-                <p className="text-slate-600 leading-relaxed text-sm">
-                  {selectedProduct.description}
-                </p>
-              </div>
-
-              {/* Action Bar */}
-              <div className="space-y-3 pt-4 border-t border-gray-100">
-                {selectedProduct.inStock ? (
-                  getInCartQty(selectedProduct.id) > 0 ? (
-                    <div className="flex items-center justify-between p-4 bg-orange-50 rounded-2xl">
-                      <span className="font-bold text-orange-700 text-sm">Já no carrinho:</span>
-                      <div className="flex items-center gap-4 bg-white rounded-xl px-2 py-1 shadow-sm">
-                        <button onClick={() => addToCart(selectedProduct, -1)} className="w-8 h-8 flex items-center justify-center text-orange-500 font-bold hover:bg-orange-50 rounded-lg"><Minus size={16} /></button>
-                        <span className="text-lg font-black text-slate-800 w-4 text-center">{getInCartQty(selectedProduct.id)}</span>
-                        <button onClick={() => addToCart(selectedProduct, 1)} className="w-8 h-8 flex items-center justify-center text-orange-500 font-bold hover:bg-orange-50 rounded-lg"><Plus size={16} /></button>
-                      </div>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => {
-                        if (isStoreOpen) {
-                          addToCart(selectedProduct);
-                          setSelectedProduct(null); // Close modal after adding (optional UX choice)
-                        } else {
-                          alert('A loja está fechada.');
-                        }
-                      }}
-                      disabled={!isStoreOpen}
-                      className={`w-full py-4 rounded-xl font-black text-white shadow-xl transition-all active:scale-95 flex items-center justify-center gap-2 ${isStoreOpen ? 'bg-orange-500 hover:bg-orange-600 shadow-orange-200' : 'bg-gray-300 cursor-not-allowed'
-                        }`}
-                    >
-                      <Plus size={20} /> {isStoreOpen ? 'Adicionar ao Carrinho' : 'Loja Fechada'}
-                    </button>
-                  )
-                ) : (
-                  <div className="w-full py-4 bg-gray-100 rounded-xl text-center font-bold text-gray-400">
-                    Produto Indisponível
-                  </div>
-                )}
-              </div>
-            </div>
           </div>
         </div>
-      )}
-    </div>
+      </div>
+    )
+  }
+    </div >
   );
 };
