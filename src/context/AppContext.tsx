@@ -420,17 +420,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const stopNotificationSound = useCallback(() => { try { audio.pause(); audio.currentTime = 0; } catch (e) { } }, [audio]);
 
-  // Play sound continuously while there are PENDING or AWAITING_PAYMENT orders
+  // Play sound continuously while there are PENDING orders
   useEffect(() => {
-    // Include AWAITING_PAYMENT (Pix) so the alarm rings for them too
-    const hasPendingOrders = orders.some(o =>
-      o.status === OrderStatus.PENDING || o.status === OrderStatus.AWAITING_PAYMENT
-    );
+    // Only ring for PENDING orders (Paid Pix or Pay on Delivery)
+    // AWAITING_PAYMENT (Unpaid Pix) should be silent
+    const hasPendingOrders = orders.some(o => o.status === OrderStatus.PENDING);
 
     if (hasPendingOrders && audioUnlocked && view === 'admin') {
       // Start playing if not already playing
       if (audio.paused) {
-        console.log('🔔 Tocando som - existem pedidos pendentes/aguardando');
+        console.log('🔔 Tocando som - existem pedidos pendentes');
         audio.loop = true;
         audio.currentTime = 0;
         audio.play().catch(e => console.warn('Audio play failed:', e));

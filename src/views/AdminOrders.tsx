@@ -41,9 +41,9 @@ export const AdminOrders: React.FC = () => {
   };
 
   const filteredOrders = orders.filter(o => {
-    // Show ALL orders in 'Todos' view, including Awaiting Payment
+    // Hide Awaiting Payment from 'Todos' view
     const matchesStatus = filter === 'Todos'
-      ? true
+      ? o.status !== OrderStatus.AWAITING_PAYMENT
       : o.status === filter;
     const searchLower = (search || '').toLowerCase();
     const customerMatch = (o.customerName || '').toLowerCase().includes(searchLower);
