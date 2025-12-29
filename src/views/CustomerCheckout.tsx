@@ -41,6 +41,10 @@ export const CustomerCheckout: React.FC<{
   const [selectedFee, setSelectedFee] = useState<number | null>(null);
   const { deliveryFees } = useApp();
 
+  // Autocomplete State
+  const [suggestions, setSuggestions] = useState<typeof deliveryFees>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
   // VALIDATION LOGIC
   const formatPhone = (val: string) => {
     // Remove everything that is not a number
@@ -176,20 +180,38 @@ export const CustomerCheckout: React.FC<{
     }
   };
 
-  const handleNeighborhoodChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = e.target.value;
-    if (value === 'CUSTOM') {
-      setIsCustomNeighborhood(true);
-      setNeighborhood('');
-      setSelectedFee(0);
-    } else {
-      setIsCustomNeighborhood(false);
-      const feeObj = deliveryFees.find(df => df.id === value);
-      if (feeObj) {
-        setNeighborhood(feeObj.neighborhood);
-        setSelectedFee(feeObj.fee);
+  const handleNeighborhoodChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setNeighborhood(val);
+
+    // Filter suggestions
+    if (val.length > 0) {
+      const matches = deliveryFees.filter(df =>
+        df.is_active && df.neighborhood.toLowerCase().includes(val.toLowerCase())
+      );
+      setSuggestions(matches);
+      setShowSuggestions(true);
+
+      // Check for exact match to auto-set fee (optional UX, sticking to explicit selection usually better, but let's clear fee if typing custom)
+      const exact = matches.find(m => m.neighborhood.toLowerCase() === val.toLowerCase());
+      if (exact) {
+        setSelectedFee(exact.fee);
+        setIsCustomNeighborhood(false);
+      } else {
+        setSelectedFee(null); // Unknown / Custom
+        setIsCustomNeighborhood(true);
       }
+    } else {
+      setSuggestions([]);
+      setShowSuggestions(false);
     }
+  };
+
+  const selectSuggestion = (feeObj: typeof deliveryFees[0]) => {
+    setNeighborhood(feeObj.neighborhood);
+    setSelectedFee(feeObj.fee);
+    setIsCustomNeighborhood(false);
+    setShowSuggestions(false);
   };
 
   const handleFinish = async () => {
@@ -411,45 +433,49 @@ export const CustomerCheckout: React.FC<{
                 <div className="col-span-8 group">
                   <label className="text-[10px] font-bold text-gray-400 uppercase ml-4 mb-1 block">Bairro</label>
 
-                  {!isCustomNeighborhood ? (
-                    <div className="relative">
-                      <select
-                        onChange={handleNeighborhoodChange}
-                        value={deliveryFees.find(df => df.neighborhood === neighborhood)?.id || ''}
-                        className="w-full bg-white border border-gray-100 p-4 rounded-2xl shadow-sm focus:ring-2 focus:ring-orange-500 outline-none transition-all appearance-none text-slate-700"
-                      >
-                        <option value="">Selecione seu bairro...</option>
-                        {deliveryFees.filter(df => df.is_active).map(df => (
-                          <option key={df.id} value={df.id}>
-                            {df.neighborhood} (+ R$ {df.fee.toFixed(2).replace('.', ',')})
-                          </option>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={neighborhood}
+                      onChange={handleNeighborhoodChange}
+                      onFocus={() => {
+                        if (neighborhood) {
+                          const matches = deliveryFees.filter(df => df.is_active && df.neighborhood.toLowerCase().includes(neighborhood.toLowerCase()));
+                          setSuggestions(matches);
+                          setShowSuggestions(true);
+                        } else {
+                          setSuggestions(deliveryFees.filter(df => df.is_active)); // Show all if empty? or none. Let's show all for discovery.
+                          setShowSuggestions(true);
+                        }
+                      }}
+                      placeholder="Digite seu bairro..."
+                      className="w-full bg-white border border-gray-100 p-4 rounded-2xl shadow-sm focus:ring-2 focus:ring-orange-500 outline-none transition-all placeholder:text-gray-300"
+                      autoComplete="off"
+                    />
+
+                    {/* Suggestions List */}
+                    {showSuggestions && suggestions.length > 0 && (
+                      <div className="absolute z-50 top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-gray-100 max-h-60 overflow-y-auto animate-in slide-in-from-top-2 fade-in duration-200">
+                        {suggestions.map(s => (
+                          <button
+                            key={s.id}
+                            onClick={() => selectSuggestion(s)}
+                            className="w-full text-left px-4 py-3 hover:bg-orange-50 transition-colors border-b border-gray-50 last:border-0 flex justify-between items-center group"
+                          >
+                            <span className="font-bold text-slate-700 text-sm">{s.neighborhood}</span>
+                            <span className="text-xs font-medium text-orange-500 bg-orange-50 px-2 py-1 rounded-lg group-hover:bg-orange-100">
+                              {s.fee > 0 ? `+ R$ ${s.fee.toFixed(2).replace('.', ',')}` : 'Grátis'}
+                            </span>
+                          </button>
                         ))}
-                        <option value="CUSTOM">Outro / Não encontrei meu bairro</option>
-                      </select>
-                      <MapPin size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-orange-500 pointer-events-none" />
-                    </div>
-                  ) : (
-                    <div className="relative animate-in slide-in-from-bottom-2 fade-in">
-                      <input
-                        type="text"
-                        value={neighborhood}
-                        onChange={e => setNeighborhood(e.target.value)}
-                        placeholder="Digite o nome do bairro"
-                        className="w-full bg-white border border-gray-100 p-4 rounded-2xl shadow-sm focus:ring-2 focus:ring-orange-500 outline-none transition-all placeholder:text-gray-300"
-                        autoFocus
-                      />
-                      <button
-                        onClick={() => {
-                          setIsCustomNeighborhood(false);
-                          setNeighborhood('');
-                          setSelectedFee(null);
-                        }}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-blue-500 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-colors"
-                      >
-                        Ver lista
-                      </button>
-                    </div>
-                  )}
+                      </div>
+                    )}
+
+                    {/* Backdrop to close suggestions */}
+                    {showSuggestions && (
+                      <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setShowSuggestions(false)} />
+                    )}
+                  </div>
                 </div>
               </div>
             </section>
