@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from 'react';
 import { Search, Plus, Minus, Utensils, IceCream, UtensilsCrossed, ShoppingBag, Package, Info, X } from 'lucide-react';
 import { BurgerIcon, FriesIcon, SodaCanIcon, ComboIcon } from '../components/CategoryIcons';
 import { useApp } from '../context/AppContext';
