@@ -83,7 +83,8 @@ export const CustomerCheckout: React.FC<{
     if (cleanPhone.length < 10) return false;
 
     // Address
-    if (!street || street.trim().length < 3) return false;
+    // Address
+    if (!street || street.trim().length === 0) return false;
     if (!number || number.trim().length === 0) return false;
 
     // Neighborhood
@@ -425,14 +426,14 @@ export const CustomerCheckout: React.FC<{
                     value={street}
                     onChange={e => setStreet(e.target.value)}
                     placeholder="Digite o logradouro"
-                    className={`w-full bg-white border p-4 rounded-2xl shadow-sm outline-none transition-all placeholder:text-gray-300 ${showErrors && (!street || street.trim().length < 3)
-                      ? 'border-red-500 focus:ring-2 focus:ring-red-500/20'
-                      : 'border-gray-100 focus:ring-2 focus:ring-orange-500'
+                    className={`w-full bg-white border p-4 rounded-2xl shadow-sm outline-none transition-all placeholder:text-gray-300 ${showErrors && (!street || street.trim().length === 0)
+                        ? 'border-red-500 focus:ring-2 focus:ring-red-500/20'
+                        : 'border-gray-100 focus:ring-2 focus:ring-orange-500'
                       }`}
                   />
-                  {showErrors && (!street || street.trim().length < 3) && (
+                  {showErrors && (!street || street.trim().length === 0) && (
                     <span className="text-[10px] text-red-500 ml-4 font-bold flex items-center gap-1 mt-1">
-                      Informe o nome da rua
+                      Informe o nome da rua (ou número)
                     </span>
                   )}
                 </div>
