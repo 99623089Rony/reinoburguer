@@ -326,6 +326,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       primaryColor: data.primary_color,
       whatsapp: data.whatsapp,
       pixKey: data.pix_key,
+      address: data.address, // Mapped
       cardFeePercent: data.card_fee_percent, // Deprecated
       cardDebitFeePercent: data.card_debit_fee_percent, // Mapped
       cardCreditFeePercent: data.card_credit_fee_percent, // Mapped
@@ -650,6 +651,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (c.primaryColor !== undefined) mapped.primary_color = c.primaryColor;
         if (c.whatsapp !== undefined) mapped.whatsapp = c.whatsapp;
         if (c.pixKey !== undefined) mapped.pix_key = c.pixKey;
+        if (c.address !== undefined) mapped.address = c.address;
         if (c.cardFeePercent !== undefined) mapped.card_fee_percent = c.cardFeePercent; // Deprecated
         if (c.cardDebitFeePercent !== undefined) mapped.card_debit_fee_percent = c.cardDebitFeePercent; // Mapped
         if (c.cardCreditFeePercent !== undefined) mapped.card_credit_fee_percent = c.cardCreditFeePercent; // Mapped
