@@ -52,12 +52,12 @@ Deno.serve(async (req) => {
                         .single();
 
                     if (currentOrder && currentOrder.status === 'Aguardando Pagamento') {
-                        // Update order to PAID and PENDING (so it rings alarm)
+                        // Update order to PAID and PENDENTE (so it rings alarm)
                         const { error } = await supabase
                             .from('orders')
                             .update({
                                 payment_status: 'paid',
-                                status: 'Pendente' // Changed from 'Preparo' to 'Pendente' as requested
+                                status: 'Pendente' // Changed to 'Pendente' so alarm rings
                             })
                             .eq('mp_payment_id', String(paymentId));
 
@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
                         }
                         console.log(`Order updated to PENDING for payment ${paymentId}`);
                     } else {
-                        console.log(`Skipping status update for order ${orderId} (Current: ${currentOrder?.status})`);
+                        console.log(`Skipping status update for order (Current: ${currentOrder?.status})`);
                     }
                 } else {
                     // Update payment status only
