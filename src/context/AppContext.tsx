@@ -530,19 +530,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }
 
           if (o.status === OrderStatus.FINISHED) {
-            // Check if transaction already exists for this order to avoid duplicates locally if auto-trigger runs
-            const { data: existing } = await supabase.from('transactions').select('id').eq('order_id', o.id).maybeSingle();
-            if (!existing) {
-              console.log('💰 Order Finished! Auto-creating INCOME transaction...');
-              await addTransaction({
-                type: 'INCOME',
-                amount: Number(o.total),
-                description: `Venda - Pedido #${o.id.slice(0, 8)}`,
-                category: 'Vendas',
-                paymentMethod: o.payment_method,
-                orderId: o.id
-              });
-            }
+            console.log('💰 Order Finished! DB Trigger should handle transaction creation.');
           }
         }
       })
