@@ -16,7 +16,8 @@ export const CustomerSearch: React.FC = () => {
 
     const getInCartQty = (id: string) => cart.filter(i => i.id === id).reduce((acc, i) => acc + i.quantity, 0);
 
-    const popularTerms = ['Artesanal', 'Smash', 'Combo', 'Batata', 'Suco'];
+    // Use category names for popular searches (dynamic from database)
+    const popularTerms = categories.slice(0, 5).map(c => c.name);
 
     return (
         <div className="min-h-screen bg-gray-50/50 p-5 pb-24 space-y-6">
