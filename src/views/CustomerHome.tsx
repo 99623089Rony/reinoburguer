@@ -102,11 +102,13 @@ export const CustomerHome: React.FC = () => {
 
       {/* Hero Banner */}
       <div className="relative h-48 rounded-3xl overflow-hidden group shadow-xl bg-gray-200">
-        <img
-          src={storeConfig?.coverUrl || "https://images.unsplash.com/photo-1550547660-d9450f859349?w=1200&q=80"}
-          alt="Capa da Loja"
-          className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-        />
+        {storeConfig?.coverUrl && (
+          <img
+            src={storeConfig.coverUrl}
+            alt="Capa da Loja"
+            className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+          />
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-6">
           <p className="text-white/80 text-xs font-medium">Bem-vindo ao</p>
           <h2 className="text-white text-3xl font-bold leading-tight">{storeConfig?.name || 'Reino Burguer'}</h2>
