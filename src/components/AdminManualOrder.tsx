@@ -275,8 +275,8 @@ export const AdminManualOrder: React.FC<AdminManualOrderProps> = ({ onClose, onS
                         <div className="h-px bg-slate-800 mb-6"></div>
 
                         {/* Customer Form */}
-                        <div className="space-y-4 overflow-y-auto custom-scrollbar flex-1 pb-4">
-                            <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Dados do Cliente</h3>
+                        <div className="space-y-4 overflow-y-auto custom-scrollbar flex-1 pb-4 pr-1">
+                            <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-3">Dados do Cliente</h3>
 
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 flex items-center gap-2 focus-within:ring-2 ring-blue-500/50">
@@ -318,13 +318,16 @@ export const AdminManualOrder: React.FC<AdminManualOrderProps> = ({ onClose, onS
 
                             {deliveryMethod === 'DELIVERY' && (
                                 <div className="space-y-3 animate-in slide-in-from-top-2">
-                                    <div className="bg-slate-900 border border-slate-800 rounded-xl px-3 py-3 flex items-start gap-2 focus-within:ring-2 ring-blue-500/50">
-                                        <MapPin size={16} className="text-slate-500 mt-0.5" />
+                                    <div className="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 focus-within:ring-2 ring-blue-500/50">
+                                        <div className="flex items-center gap-2 mb-1.5">
+                                            <MapPin size={14} className="text-slate-500" />
+                                            <label className="text-[9px] font-bold text-slate-500 uppercase">Endereço de Entrega</label>
+                                        </div>
                                         <textarea
-                                            placeholder="Endereço completo para entrega..."
+                                            placeholder="Digite o endereço completo..."
                                             value={address}
                                             onChange={e => setAddress(e.target.value)}
-                                            className="bg-transparent border-none outline-none text-sm text-white w-full placeholder:text-slate-600 resize-none h-16"
+                                            className="bg-transparent border-none outline-none text-xs text-white w-full placeholder:text-slate-600 resize-none h-14 leading-relaxed break-words"
                                         />
                                     </div>
 
@@ -362,13 +365,13 @@ export const AdminManualOrder: React.FC<AdminManualOrderProps> = ({ onClose, onS
                                 </div>
                             )}
 
-                            <div className="bg-slate-900 border border-slate-800 rounded-xl px-3 py-3 flex items-start gap-2 focus-within:ring-2 ring-blue-500/50">
-                                <span className="text-slate-500 text-xs mt-1 font-bold">Obs:</span>
+                            <div className="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 focus-within:ring-2 ring-blue-500/50">
+                                <label className="text-[9px] font-bold text-slate-500 uppercase mb-1.5 block">Observações</label>
                                 <textarea
                                     placeholder="Observações do pedido (opcional)..."
                                     value={orderObservation}
                                     onChange={e => setOrderObservation(e.target.value)}
-                                    className="bg-transparent border-none outline-none text-xs text-white w-full placeholder:text-slate-600 resize-none h-10"
+                                    className="bg-transparent border-none outline-none text-xs text-white w-full placeholder:text-slate-600 resize-none h-12 leading-relaxed break-words"
                                 />
                             </div>
 
