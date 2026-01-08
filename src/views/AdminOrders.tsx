@@ -17,6 +17,17 @@ export const AdminOrders: React.FC = () => {
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [isManualOrderOpen, setIsManualOrderOpen] = useState(false);
 
+  const orderSubtotal = React.useMemo(() => {
+    if (!selectedOrder) return 0;
+    return selectedOrder.items.reduce((acc, item) => {
+      const itemPrice = Number(item.price) || 0;
+      const extrasTotal = item.extras?.reduce((sum, ex) => sum + (Number(ex.price) || 0), 0) || 0;
+      return acc + (itemPrice + extrasTotal) * item.quantity;
+    }, 0);
+  }, [selectedOrder]);
+
+  const totalFees = selectedOrder ? selectedOrder.total - orderSubtotal : 0;
+
   // Helper function to filter by date
   const filterByDate = (orderDate: Date) => {
     const now = new Date();
@@ -203,6 +214,12 @@ export const AdminOrders: React.FC = () => {
                   </div>
                 )}
                 <div className="text-right">
+                  <div className="flex flex-col items-end gap-0.5 mb-2">
+                    <p className="text-[10px] text-slate-500 font-bold">SUBTOTAL: R$ {orderSubtotal.toFixed(2).replace('.', ',')}</p>
+                    {totalFees > 0.05 && (
+                      <p className="text-[10px] text-orange-500 font-bold">TAXAS: + R$ {totalFees.toFixed(2).replace('.', ',')}</p>
+                    )}
+                  </div>
                   <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-1">Total Geral</p>
                   <p className="text-3xl font-black text-orange-500">R$ {selectedOrder.total.toFixed(2).replace('.', ',')}</p>
                 </div>

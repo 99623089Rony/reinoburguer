@@ -17,7 +17,7 @@ interface ManualCartItem {
 }
 
 export const AdminManualOrder: React.FC<AdminManualOrderProps> = ({ onClose, onSuccess }) => {
-    const { products, deliveryFees } = useApp();
+    const { products, deliveryFees, storeConfig } = useApp();
     const [step, setStep] = useState(1); // 1: Products, 2: Details
     const [searchTerm, setSearchTerm] = useState('');
     const [cart, setCart] = useState<ManualCartItem[]>([]);
@@ -84,7 +84,19 @@ export const AdminManualOrder: React.FC<AdminManualOrderProps> = ({ onClose, onS
         return acc + (item.product.price * item.quantity);
     }, 0);
 
-    const total = cartSubtotal + (deliveryMethod === 'DELIVERY' ? deliveryFee : 0);
+    const cardFee = useMemo(() => {
+        if (!storeConfig) return 0;
+        const baseForFee = cartSubtotal + (deliveryMethod === 'DELIVERY' ? deliveryFee : 0);
+        if (paymentMethod === 'Cartão de Crédito') {
+            return baseForFee * ((storeConfig.cardCreditFeePercent || 0) / 100);
+        }
+        if (paymentMethod === 'Cartão de Débito') {
+            return baseForFee * ((storeConfig.cardDebitFeePercent || 0) / 100);
+        }
+        return 0;
+    }, [paymentMethod, cartSubtotal, deliveryMethod, deliveryFee, storeConfig]);
+
+    const total = cartSubtotal + (deliveryMethod === 'DELIVERY' ? deliveryFee : 0) + cardFee;
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -108,9 +120,14 @@ export const AdminManualOrder: React.FC<AdminManualOrderProps> = ({ onClose, onS
                 finalAddress += ` | Obs: ${orderObservation} `;
             }
 
+            // Append Card Fee Info
+            if (cardFee > 0) {
+                finalAddress += ` | Taxa Maquininha: R$ ${cardFee.toFixed(2).replace('.', ',')}`;
+            }
+
             // Append Change Info if Money
             if (paymentMethod === 'Dinheiro' && changeAmount) {
-                const change = parseFloat(changeAmount.replace(',', '.'))-total;
+                const change = parseFloat(changeAmount.replace(',', '.')) - total;
                 if (change > 0) {
                     finalAddress += ` | Troco p / ${changeAmount} (Devolver R$ ${change.toFixed(2).replace('.', ',')})`;
                 }
@@ -410,7 +427,7 @@ export const AdminManualOrder: React.FC<AdminManualOrderProps> = ({ onClose, onS
                                     <div className="mt-2 text-right">
                                         {(() => {
                                             const val = parseFloat(changeAmount.replace(',', '.'));
-                                            const change = val-total;
+                                            const change = val - total;
                                             return change > 0 ? (
                                                 <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-lg">
                                                     Devolver Troco: R$ {change.toFixed(2).replace('.', ',')}
@@ -436,6 +453,12 @@ export const AdminManualOrder: React.FC<AdminManualOrderProps> = ({ onClose, onS
                                 <div className="flex justify-between items-center text-xs text-orange-500 font-bold">
                                     <span>Taxa de Entrega</span>
                                     <span>+ R$ {deliveryFee.toFixed(2).replace('.', ',')}</span>
+                                </div>
+                            )}
+                            {cardFee > 0 && (
+                                <div className="flex justify-between items-center text-xs text-blue-400 font-bold">
+                                    <span>Taxa Maquininha ({paymentMethod.includes('Crédito') ? 'Crédito' : 'Débito'})</span>
+                                    <span>+ R$ {cardFee.toFixed(2).replace('.', ',')}</span>
                                 </div>
                             )}
                             <div className="flex justify-between items-end pt-2 border-t border-slate-800">

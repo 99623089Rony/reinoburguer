@@ -202,11 +202,13 @@ export class PrinterService {
         text += '\n';
         text += this.formatRow('Subtotal:', `R$ ${subtotal.toFixed(2)}`, width) + '\n';
 
-        if (deliveryFee > 0.05) { // Tolerance for float errors
-            text += this.formatRow('Taxa Entrega:', `R$ ${deliveryFee.toFixed(2)}`, width) + '\n';
-        } else if (deliveryFee < -0.05) {
-            // If total is LESS than subtotal, it implies a discount
-            const discount = Math.abs(deliveryFee);
+        const fees = order.total - subtotal;
+
+        if (fees > 0.05) {
+            const label = order.address.toUpperCase().includes('RETIRADA') ? 'Taxa Maquininha:' : 'Taxas/Entrega:';
+            text += this.formatRow(label, `R$ ${fees.toFixed(2)}`, width) + '\n';
+        } else if (fees < -0.05) {
+            const discount = Math.abs(fees);
             text += this.formatRow('Desconto:', `- R$ ${discount.toFixed(2)}`, width) + '\n';
         }
 
