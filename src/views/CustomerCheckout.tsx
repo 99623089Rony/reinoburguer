@@ -569,11 +569,11 @@ export const CustomerCheckout: React.FC<{
                       <span>R$ {itemTotal.toFixed(2).replace('.', ',')}</span>
                     </div>
                     {item.extras && item.extras.length > 0 && (
-                      <div className="pl-4 text-[10px] text-slate-500">
+                      <div className="pl-4 text-[10px] text-slate-500 break-words">
                         {item.extras.map(e => `+ ${e.name}`).join(', ')}
                       </div>
                     )}
-                    {item.observation && <div className="pl-4 text-[10px] text-orange-600 italic">Obs: {item.observation}</div>}
+                    {item.observation && <div className="pl-4 text-[10px] text-orange-600 italic break-words max-w-full pr-2">Obs: {item.observation}</div>}
                   </div>
                 );
               })}
