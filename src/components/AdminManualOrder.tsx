@@ -86,7 +86,7 @@ export const AdminManualOrder: React.FC<AdminManualOrderProps> = ({ onClose, onS
 
     const cardFee = useMemo(() => {
         if (!storeConfig) return 0;
-        const baseForFee = cartSubtotal + (deliveryMethod === 'DELIVERY' ? deliveryFee : 0);
+        const baseForFee = cartSubtotal; // Exclude delivery fee
         if (paymentMethod === 'Cartão de Crédito') {
             return baseForFee * ((storeConfig.cardCreditFeePercent || 0) / 100);
         }
@@ -94,7 +94,7 @@ export const AdminManualOrder: React.FC<AdminManualOrderProps> = ({ onClose, onS
             return baseForFee * ((storeConfig.cardDebitFeePercent || 0) / 100);
         }
         return 0;
-    }, [paymentMethod, cartSubtotal, deliveryMethod, deliveryFee, storeConfig]);
+    }, [paymentMethod, cartSubtotal, storeConfig]);
 
     const total = cartSubtotal + (deliveryMethod === 'DELIVERY' ? deliveryFee : 0) + cardFee;
 

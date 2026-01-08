@@ -151,9 +151,9 @@ export const CustomerCheckout: React.FC<{
   const currentDeliveryFee = orderType === 'pickup' ? 0 : (selectedFee ?? 0);
   const discount = appliedCoupon?.reward?.discountValue || 0;
 
-  // Calculate Card Fees
-  const cardDebitFee = paymentMethod === 'Débito' ? (subtotal + currentDeliveryFee - discount) * ((storeConfig?.cardDebitFeePercent || 0) / 100) : 0;
-  const cardCreditFee = paymentMethod === 'Crédito' ? (subtotal + currentDeliveryFee - discount) * ((storeConfig?.cardCreditFeePercent || 0) / 100) : 0;
+  // Calculate Card Fees (Exclude delivery fee from base)
+  const cardDebitFee = paymentMethod === 'Débito' ? (subtotal - discount) * ((storeConfig?.cardDebitFeePercent || 0) / 100) : 0;
+  const cardCreditFee = paymentMethod === 'Crédito' ? (subtotal - discount) * ((storeConfig?.cardCreditFeePercent || 0) / 100) : 0;
 
   const total = Math.max(0, subtotal + currentDeliveryFee - discount + cardDebitFee + cardCreditFee);
 
