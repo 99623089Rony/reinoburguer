@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { ClipboardList, Utensils, Star, Ticket, BarChart3, Settings, LogIn, Printer, DollarSign, Users, Store } from 'lucide-react';
+import { ClipboardList, Utensils, Star, Ticket, BarChart3, Settings, LogIn, Printer, DollarSign, Users, Store, Plus } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../context/AppContext';
 
@@ -12,6 +12,7 @@ export interface AdminMenuItem {
 
 export const ADMIN_MENU_ITEMS: AdminMenuItem[] = [
     { id: 'orders', label: 'Pedidos', icon: <ClipboardList size={20} /> },
+    { id: 'manual_order', label: 'Novo Pedido', icon: <Plus size={20} /> },
     { id: 'customer_view', label: 'Ver Loja', icon: <Store size={24} /> },
     { id: 'stock', label: 'Cardápio', icon: <Utensils size={20} /> },
     { id: 'printer', label: 'Impressora', icon: <Printer size={20} /> },

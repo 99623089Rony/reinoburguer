@@ -4,7 +4,6 @@ import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
 import { OrderStatus, Order } from '../types';
 import { PrinterService } from '../lib/PrinterService';
-import { AdminManualOrder } from '../components/AdminManualOrder';
 
 type DateFilterType = 'today' | 'week' | 'month' | 'all';
 
@@ -15,7 +14,6 @@ export const AdminOrders: React.FC = () => {
   const [search, setSearch] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
-  const [isManualOrderOpen, setIsManualOrderOpen] = useState(false);
 
   const orderSubtotal = React.useMemo(() => {
     if (!selectedOrder) return 0;
@@ -102,10 +100,6 @@ export const AdminOrders: React.FC = () => {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500" onClick={() => setActiveMenu(null)}>
-      {/* Manual Order Modal */}
-      {isManualOrderOpen && (
-        <AdminManualOrder onClose={() => setIsManualOrderOpen(false)} onSuccess={() => setIsManualOrderOpen(false)} />
-      )}
 
       {/* Detail Modal */}
       {selectedOrder && (
@@ -269,15 +263,6 @@ export const AdminOrders: React.FC = () => {
                 {s === 'Todos' ? 'Todos Status' : s}
               </button>
             ))}
-
-            <div className="h-8 w-px bg-slate-800 mx-2 hidden md:block"></div>
-
-            <button
-              onClick={() => setIsManualOrderOpen(true)}
-              className="px-4 py-2 rounded-xl text-sm font-bold bg-emerald-500 text-white hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 active:scale-95 transition-all flex items-center gap-2 whitespace-nowrap"
-            >
-              <Plus size={16} /> Novo Pedido
-            </button>
           </div>
 
           <div className="relative group">

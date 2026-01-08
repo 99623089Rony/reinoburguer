@@ -21,7 +21,8 @@ import { CustomerProfile } from './views/CustomerProfile';
 import { AdminRewards } from './views/AdminRewards';
 import { AdminFinance } from './views/AdminFinance';
 import { AdminTeam } from './views/AdminTeam';
-import { Search, User, Utensils, Ticket, Settings, ClipboardList, Printer, MapPin } from 'lucide-react';
+import { AdminManualOrder } from './components/AdminManualOrder';
+import { Search, User, Utensils, Ticket, Settings, ClipboardList, Printer, MapPin, Plus } from 'lucide-react';
 import { supabase } from './lib/supabase';
 import { Session } from '@supabase/supabase-js';
 
@@ -125,6 +126,7 @@ const ViewManager: React.FC = () => {
     <AdminLayout activeTab={adminTab} onTabChange={setAdminTab}>
 
       {adminTab === 'orders' && <AdminOrders />}
+      {adminTab === 'manual_order' && <AdminManualOrder onBack={() => setAdminTab('orders')} onSuccess={() => setAdminTab('orders')} />}
       {adminTab === 'reports' && <AdminReports />}
       {adminTab === 'stock' && <AdminMenu />}
       {adminTab === 'loyalty' && <AdminLoyalty />}
