@@ -564,9 +564,9 @@ export const CustomerCheckout: React.FC<{
                 const itemTotal = (item.price + extrasTotal) * item.quantity;
                 return (
                   <div key={item.cartId} className="space-y-1">
-                    <div className="flex justify-between text-sm text-slate-900 font-bold">
-                      <span>{item.quantity}x {item.name}</span>
-                      <span>R$ {itemTotal.toFixed(2).replace('.', ',')}</span>
+                    <div className="flex justify-between items-start text-sm text-slate-900 font-bold gap-4">
+                      <span className="flex-1 min-w-0 break-words">{item.quantity}x {item.name}</span>
+                      <span className="shrink-0">R$ {itemTotal.toFixed(2).replace('.', ',')}</span>
                     </div>
                     {item.extras && item.extras.length > 0 && (
                       <div className="pl-4 text-[10px] text-slate-500 break-words">

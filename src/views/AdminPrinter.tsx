@@ -122,7 +122,7 @@ export const AdminPrinter: React.FC = () => {
                         <button
                             onClick={() => handleConnect('usb')}
                             disabled={loading}
-                            className={`py - 4 rounded - 2xl font - black transition - all flex flex - col items - center justify - center gap - 2 border ${connectedType === 'usb' ? 'bg-blue-600 border-blue-500 text-white' : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-white'} `}
+                            className={`py-4 rounded-2xl font-black transition-all flex flex-col items-center justify-center gap-2 border ${connectedType === 'usb' ? 'bg-blue-600 border-blue-500 text-white' : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-white'}`}
                         >
                             <Usb size={20} />
                             <span className="text-[10px]">USB / SERIAL</span>
@@ -130,7 +130,7 @@ export const AdminPrinter: React.FC = () => {
                         <button
                             onClick={() => handleConnect('bluetooth')}
                             disabled={loading}
-                            className={`py - 4 rounded - 2xl font - black transition - all flex flex - col items - center justify - center gap - 2 border ${connectedType === 'bluetooth' ? 'bg-blue-600 border-blue-500 text-white' : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-white'} `}
+                            className={`py-4 rounded-2xl font-black transition-all flex flex-col items-center justify-center gap-2 border ${connectedType === 'bluetooth' ? 'bg-blue-600 border-blue-500 text-white' : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-white'}`}
                         >
                             <Bluetooth size={20} />
                             <span className="text-[10px]">BLUETOOTH</span>
@@ -159,9 +159,9 @@ export const AdminPrinter: React.FC = () => {
                             </div>
                             <button
                                 onClick={() => setConfig({ ...config, autoPrint: !config.autoPrint })}
-                                className={`w - 12 h - 6 rounded - full transition - all relative ${config.autoPrint ? 'bg-orange-600' : 'bg-slate-700'} `}
+                                className={`w-12 h-6 rounded-full transition-all relative ${config.autoPrint ? 'bg-orange-600' : 'bg-slate-700'}`}
                             >
-                                <div className={`absolute top - 1 w - 4 h - 4 bg - white rounded - full transition - all ${config.autoPrint ? 'left-7' : 'left-1'} `} />
+                                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${config.autoPrint ? 'left-7' : 'left-1'}`} />
                             </button>
                         </div>
 
@@ -172,7 +172,7 @@ export const AdminPrinter: React.FC = () => {
                                     <button
                                         key={size}
                                         onClick={() => setConfig({ ...config, paperSize: size as any })}
-                                        className={`py - 3 rounded - xl border text - xs font - bold transition - all ${config.paperSize === size ? 'bg-blue-600/10 border-blue-500 text-blue-400' : 'bg-slate-950/30 border-slate-800 text-slate-500'} `}
+                                        className={`py-3 rounded-xl border text-xs font-bold transition-all ${config.paperSize === size ? 'bg-blue-600/10 border-blue-500 text-blue-400' : 'bg-slate-950/30 border-slate-800 text-slate-500'}`}
                                     >
                                         {size}
                                     </button>

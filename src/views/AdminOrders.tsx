@@ -388,9 +388,9 @@ export const AdminOrders: React.FC = () => {
                     <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-slate-500"><Phone size={14} /></div>
                     {order.phone}
                   </div>
-                  <div className="flex items-center gap-3 text-slate-400 text-xs text-balance">
-                    <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-slate-500 shrink-0"><MapPin size={14} /></div>
-                    <span className="line-clamp-1">{order.address}</span>
+                  <div className="flex items-start gap-3 text-slate-400 text-xs text-balance">
+                    <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-slate-500 shrink-0 mt-0.5"><MapPin size={14} /></div>
+                    <span className="break-words leading-tight">{order.address}</span>
                   </div>
                 </div>
               </div>
@@ -417,11 +417,11 @@ export const AdminOrders: React.FC = () => {
                   <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-1">Total</p>
                   <p className="text-slate-100 font-black text-lg">R$ {order.total.toFixed(2).replace('.', ',')}</p>
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-1">Pagamento</p>
-                  <div className="flex items-center gap-2 text-slate-200 text-xs font-semibold">
-                    <CreditCard size={12} className="text-orange-500" />
-                    {order.paymentMethod}
+                  <div className="flex items-start gap-2 text-slate-200 text-[10px] font-semibold">
+                    <CreditCard size={12} className="text-orange-500 shrink-0 mt-0.5" />
+                    <span className="break-words leading-tight">{order.paymentMethod}</span>
                   </div>
                 </div>
               </div>

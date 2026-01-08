@@ -110,7 +110,7 @@ export const AdminManualOrder: React.FC<AdminManualOrderProps> = ({ onClose, onS
 
             // Append Change Info if Money
             if (paymentMethod === 'Dinheiro' && changeAmount) {
-                const change = parseFloat(changeAmount.replace(',', '.')) - total;
+                const change = parseFloat(changeAmount.replace(',', '.'))-total;
                 if (change > 0) {
                     finalAddress += ` | Troco p / ${changeAmount} (Devolver R$ ${change.toFixed(2).replace('.', ',')})`;
                 }
@@ -160,8 +160,8 @@ export const AdminManualOrder: React.FC<AdminManualOrderProps> = ({ onClose, onS
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
             <div className="bg-slate-900 border border-slate-800 w-full max-w-4xl h-[85vh] rounded-3xl flex flex-col md:flex-row overflow-hidden shadow-2xl">
 
-                {/* Left Side - Product Selection */}
-                <div className={`flex - 1 flex flex - col border - r border - slate - 800 ${step === 2 ? 'hidden md:flex' : 'flex'} `}>
+                {/* Left Side-Product Selection */}
+                <div className={`flex-1 flex flex-col border-r border-slate-800 ${step === 2 ? 'hidden md:flex' : 'flex'} `}>
                     <div className="p-6 border-b border-slate-800 bg-slate-900 sticky top-0 z-10">
                         <div className="flex items-center justify-between mb-4">
                             <h2 className="text-xl font-black text-white flex items-center gap-2">
@@ -177,7 +177,7 @@ export const AdminManualOrder: React.FC<AdminManualOrderProps> = ({ onClose, onS
                                 <button
                                     key={cat}
                                     onClick={() => setSelectedCategory(cat)}
-                                    className={`px - 3 py - 1.5 rounded - lg text - xs font - bold whitespace - nowrap transition - colors ${selectedCategory === cat ? 'bg-orange-500 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'} `}
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-colors ${selectedCategory === cat ? 'bg-orange-500 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'} `}
                                 >
                                     {cat}
                                 </button>
@@ -222,8 +222,8 @@ export const AdminManualOrder: React.FC<AdminManualOrderProps> = ({ onClose, onS
                     </div>
                 </div>
 
-                {/* Right Side - Cart & Details */}
-                <div className={`w - full md: w - [400px] flex flex - col bg - slate - 950 ${step === 1 ? 'hidden md:flex' : 'flex'} `}>
+                {/* Right Side-Cart & Details */}
+                <div className={`w-full md: w-[400px] flex flex-col bg-slate-950 ${step === 1 ? 'hidden md:flex' : 'flex'} `}>
                     <div className="p-6 flex-1 flex flex-col overflow-hidden">
 
                         {/* Header Mobile */}
@@ -304,13 +304,13 @@ export const AdminManualOrder: React.FC<AdminManualOrderProps> = ({ onClose, onS
                             <div className="flex gap-2 p-1 bg-slate-900 rounded-xl border border-slate-800">
                                 <button
                                     onClick={() => setDeliveryMethod('PICKUP')}
-                                    className={`flex - 1 py - 2 rounded - lg text - xs font - bold flex items - center justify - center gap - 2 transition - all ${deliveryMethod === 'PICKUP' ? 'bg-slate-800 text-white shadow' : 'text-slate-500 hover:text-slate-300'} `}
+                                    className={`flex-1 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all ${deliveryMethod === 'PICKUP' ? 'bg-slate-800 text-white shadow' : 'text-slate-500 hover:text-slate-300'} `}
                                 >
                                     <Store size={14} /> Retirada
                                 </button>
                                 <button
                                     onClick={() => setDeliveryMethod('DELIVERY')}
-                                    className={`flex - 1 py - 2 rounded - lg text - xs font - bold flex items - center justify - center gap - 2 transition - all ${deliveryMethod === 'DELIVERY' ? 'bg-blue-600 text-white shadow' : 'text-slate-500 hover:text-slate-300'} `}
+                                    className={`flex-1 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all ${deliveryMethod === 'DELIVERY' ? 'bg-blue-600 text-white shadow' : 'text-slate-500 hover:text-slate-300'} `}
                                 >
                                     <Bike size={14} /> Entrega
                                 </button>
@@ -410,7 +410,7 @@ export const AdminManualOrder: React.FC<AdminManualOrderProps> = ({ onClose, onS
                                     <div className="mt-2 text-right">
                                         {(() => {
                                             const val = parseFloat(changeAmount.replace(',', '.'));
-                                            const change = val - total;
+                                            const change = val-total;
                                             return change > 0 ? (
                                                 <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-lg">
                                                     Devolver Troco: R$ {change.toFixed(2).replace('.', ',')}
@@ -457,7 +457,7 @@ export const AdminManualOrder: React.FC<AdminManualOrderProps> = ({ onClose, onS
                         <button
                             onClick={handleSubmit}
                             disabled={isSubmitting || cart.length === 0}
-                            className={`w - full py - 3.5 bg - emerald - 500 hover: bg - emerald - 600 text - white rounded - xl font - black shadow - lg shadow - emerald - 500 / 20 active: scale - 95 transition - all flex items - center justify - center gap - 2 ${step === 1 ? 'hidden md:flex' : 'flex'} `}
+                            className={`w-full py-3.5 bg-emerald-500 hover: bg-emerald-600 text-white rounded-xl font-black shadow-lg shadow-emerald-500 / 20 active: scale-95 transition-all flex items-center justify-center gap-2 ${step === 1 ? 'hidden md:flex' : 'flex'} `}
                         >
                             {isSubmitting ? 'Processando...' : <><CheckCircle size={20} /> Confirmar Pedido</>}
                         </button>
