@@ -313,10 +313,10 @@ export const CustomerCheckout: React.FC<{
 
       // WhatsApp Redirection (for other payment methods)
       if (storeConfig?.whatsapp) {
-        const orderId = newOrder?.id?.slice(-5).toUpperCase() || 'NOVO';
+        const orderId = newOrder?.daily_order_number || newOrder?.id?.slice(-5).toUpperCase() || 'NOVO';
         let message = `================================\n`;
         message += `      NOVO PEDIDO\n`;
-        message += `      #REINO${orderId}\n`;
+        message += `      PEDIDO #${orderId}\n`;
         message += `================================\n`;
         message += `Data: ${new Date().toLocaleDateString('pt-BR')}\n`;
         message += `Hora: ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}\n`;
@@ -333,7 +333,7 @@ export const CustomerCheckout: React.FC<{
           const extrasTotal = item.extras?.reduce((sum, e) => sum + e.price, 0) || 0;
           const itemTotal = (item.price + extrasTotal) * item.quantity;
 
-          message += `\n${index + 1}. ${item.name}\n`;
+          message += `\n. ${item.name}\n`;
           message += `   Qtd: ${item.quantity}x  Valor: R$ ${itemTotal.toFixed(2).replace('.', ',')}\n`;
 
           if (item.extras && item.extras.length > 0) {

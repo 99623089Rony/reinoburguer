@@ -530,7 +530,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (p.eventType === 'INSERT') {
           playNotificationSound();
           const o = p.new as any;
-          const mapped: Order = { id: o.id, customerName: o.customer_name, phone: o.phone, address: o.address, total: Number(o.total), paymentMethod: o.payment_method, status: o.status, items: o.items || [], timestamp: new Date(o.created_at), couponUsed: o.coupon_used, rewardTitle: o.reward_title };
+          const mapped: Order = { id: o.id, customerName: o.customer_name, phone: o.phone, address: o.address, total: Number(o.total), paymentMethod: o.payment_method, status: o.status, items: o.items || [], timestamp: new Date(o.created_at), couponUsed: o.coupon_used, rewardTitle: o.reward_title, dailyOrderNumber: o.daily_order_number };
           syncCustomer(mapped);
           if (storeConfig?.printerSettings?.autoPrint) PrinterService.printOrder(mapped, storeConfig.printerSettings.paperSize);
         } else if (p.eventType === 'UPDATE') {
@@ -539,7 +539,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           // If order becomes PENDING (e.g., PIX paid), treat as new order
           if (o.status === OrderStatus.PENDING) {
             playNotificationSound();
-            const mapped: Order = { id: o.id, customerName: o.customer_name, phone: o.phone, address: o.address, total: Number(o.total), paymentMethod: o.payment_method, status: o.status, items: o.items || [], timestamp: new Date(o.created_at), couponUsed: o.coupon_used, rewardTitle: o.reward_title };
+            const mapped: Order = { id: o.id, customerName: o.customer_name, phone: o.phone, address: o.address, total: Number(o.total), paymentMethod: o.payment_method, status: o.status, items: o.items || [], timestamp: new Date(o.created_at), couponUsed: o.coupon_used, rewardTitle: o.reward_title, dailyOrderNumber: o.daily_order_number };
             if (storeConfig?.printerSettings?.autoPrint) PrinterService.printOrder(mapped, storeConfig.printerSettings.paperSize);
           }
 
