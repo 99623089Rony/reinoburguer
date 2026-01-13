@@ -104,6 +104,7 @@ export interface StoreConfig {
   cardFeePercent?: number; // Deprecated, keeping for backward compat if needed
   cardDebitFeePercent?: number; // New Debit Fee
   cardCreditFeePercent?: number; // New Credit Fee
+  pixFeePercent?: number; // New PIX Fee
   printerSettings?: PrinterConfig;
   rankingPeriod?: 'weekly' | 'fortnightly' | 'monthly';
   rankingPrizeId?: string;

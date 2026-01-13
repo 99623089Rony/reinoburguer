@@ -154,8 +154,9 @@ export const CustomerCheckout: React.FC<{
   // Calculate Card Fees (Include delivery fee in base)
   const cardDebitFee = paymentMethod === 'Débito' ? (subtotal - discount + currentDeliveryFee) * ((storeConfig?.cardDebitFeePercent || 0) / 100) : 0;
   const cardCreditFee = paymentMethod === 'Crédito' ? (subtotal - discount + currentDeliveryFee) * ((storeConfig?.cardCreditFeePercent || 0) / 100) : 0;
+  const pixFee = (paymentMethod === 'Pix' || paymentMethod === 'pix') ? (subtotal - discount + currentDeliveryFee) * ((storeConfig?.pixFeePercent || 0) / 100) : 0;
 
-  const total = Math.max(0, subtotal + currentDeliveryFee - discount + cardDebitFee + cardCreditFee);
+  const total = Math.max(0, subtotal + currentDeliveryFee - discount + cardDebitFee + cardCreditFee + pixFee);
 
   // Block access if store is closed
   if (!isStoreOpen) {
@@ -273,7 +274,7 @@ export const CustomerCheckout: React.FC<{
           coupon_used: appliedCoupon?.code || null,
           reward_title: appliedCoupon?.reward?.title || null,
           delivery_fee: currentDeliveryFee,
-          card_fee: (cardDebitFee || cardCreditFee)
+          card_fee: (cardDebitFee || cardCreditFee || pixFee)
         }
       ]).select().single();
 
@@ -584,6 +585,16 @@ export const CustomerCheckout: React.FC<{
                   <span className="text-slate-500">Subtotal</span>
                   <span className="text-slate-800 font-medium">R$ {subtotal.toFixed(2).replace('.', ',')}</span>
                 </div>
+                {/* Taxes */}
+                {cardDebitFee > 0 || cardCreditFee > 0 || pixFee > 0 ? (
+                  <div className="flex justify-between items-center py-4 border-b border-slate-800/50">
+                    <span className="text-slate-400 text-sm font-black uppercase tracking-tight flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-orange-500" />
+                      {pixFee > 0 ? 'Taxa PIX' : 'Taxa Maquininha'}
+                    </span>
+                    <span className="text-orange-500 font-black text-sm">+ R$ {(cardDebitFee + cardCreditFee + pixFee).toFixed(2).replace('.', ',')}</span>
+                  </div>
+                ) : null}
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-500">Taxa de Entrega</span>
                   <span className={`font-medium ${currentDeliveryFee === 0 ? 'text-orange-500 font-bold' : 'text-slate-800'}`}>

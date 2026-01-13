@@ -58,7 +58,9 @@ export class WhatsAppService {
             message += `Taxa Entrega ..... R$ ${order.deliveryFee.toFixed(2).replace('.', ',')}\n`;
         }
         if (order.cardFee) {
-            message += `Taxa Maquininha .. R$ ${order.cardFee.toFixed(2).replace('.', ',')}\n`;
+            const label = order.paymentMethod.toLowerCase().includes('pix') ? 'Taxa PIX' : 'Taxa Maquininha';
+            const padding = label === 'Taxa PIX' ? '..........' : '..';
+            message += `${label} ${padding} R$ ${order.cardFee.toFixed(2).replace('.', ',')}\n`;
         }
 
         if (!order.deliveryFee && !order.cardFee && fees > 0.05) {

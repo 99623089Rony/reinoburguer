@@ -337,6 +337,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       cardFeePercent: data.card_fee_percent, // Deprecated
       cardDebitFeePercent: data.card_debit_fee_percent, // Mapped
       cardCreditFeePercent: data.card_credit_fee_percent, // Mapped
+      pixFeePercent: data.pix_fee_percent, // Mapped
       printerSettings: data.printer_settings,
       rankingPeriod: data.ranking_period || 'monthly',
       rankingPrizeId: data.ranking_prize_id,
@@ -667,6 +668,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (c.cardFeePercent !== undefined) mapped.card_fee_percent = c.cardFeePercent; // Deprecated
         if (c.cardDebitFeePercent !== undefined) mapped.card_debit_fee_percent = c.cardDebitFeePercent; // Mapped
         if (c.cardCreditFeePercent !== undefined) mapped.card_credit_fee_percent = c.cardCreditFeePercent; // Mapped
+        if (c.pixFeePercent !== undefined) mapped.pix_fee_percent = c.pixFeePercent; // Mapped
         if (c.printerSettings !== undefined) mapped.printer_settings = c.printerSettings;
         if (c.rankingPeriod !== undefined) mapped.ranking_period = c.rankingPeriod;
         if (c.rankingPrizeId !== undefined) mapped.ranking_prize_id = c.rankingPrizeId;

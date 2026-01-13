@@ -216,7 +216,9 @@ export const AdminOrders: React.FC = () => {
                       <p className="text-[10px] text-orange-500 font-bold">TAXA ENTREGA: + R$ {selectedOrder.deliveryFee.toFixed(2).replace('.', ',')}</p>
                     ) : null}
                     {selectedOrder.cardFee ? (
-                      <p className="text-[10px] text-orange-500 font-bold">TAXA MAQUININHA: + R$ {selectedOrder.cardFee.toFixed(2).replace('.', ',')}</p>
+                      <p className="text-[10px] text-orange-500 font-bold">
+                        {selectedOrder.paymentMethod.toLowerCase().includes('pix') ? 'TAXA PIX' : 'TAXA MAQUININHA'}: + R$ {selectedOrder.cardFee.toFixed(2).replace('.', ',')}
+                      </p>
                     ) : null}
                     {!selectedOrder.deliveryFee && !selectedOrder.cardFee && totalFees > 0.05 && (
                       <p className="text-[10px] text-orange-500 font-bold">TAXAS: + R$ {totalFees.toFixed(2).replace('.', ',')}</p>

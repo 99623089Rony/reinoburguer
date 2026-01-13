@@ -339,6 +339,20 @@ export const AdminSettings: React.FC = () => {
                                             <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-600 font-bold">%</div>
                                         </div>
                                     </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase ml-2 block">Taxa PIX (%)</label>
+                                        <div className="relative group">
+                                            <input
+                                                type="number"
+                                                value={storeConfig?.pixFeePercent || ''}
+                                                onChange={e => updateStoreConfig({ pixFeePercent: parseFloat(e.target.value) || 0 })}
+                                                placeholder="Ex: 1.00"
+                                                className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-4 text-white focus:border-violet-500 outline-none transition-all placeholder:text-slate-700 font-mono text-sm"
+                                            />
+                                            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-600 font-bold">%</div>
+                                        </div>
+                                    </div>
                                 </div>
                                 <p className="text-[10px] text-slate-500 italic ml-2 -mt-4">
                                     Estas taxas serão adicionadas ao total do pedido quando o cliente selecionar a opção correspondente.
