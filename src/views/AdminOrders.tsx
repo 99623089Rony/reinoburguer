@@ -4,11 +4,13 @@ import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
 import { OrderStatus, Order } from '../types';
 import { PrinterService } from '../lib/PrinterService';
+import { WhatsAppService } from '../lib/WhatsAppService';
+import { MessageCircle } from 'lucide-react';
 
 type DateFilterType = 'today' | 'week' | 'month' | 'all';
 
 export const AdminOrders: React.FC = () => {
-  const { orders, updateOrderStatus, deleteOrder } = useApp();
+  const { orders, updateOrderStatus, deleteOrder, storeConfig } = useApp();
   const [filter, setFilter] = useState<OrderStatus | 'Todos'>('Todos');
   const [dateFilter, setDateFilter] = useState<DateFilterType>('today');
   const [search, setSearch] = useState('');
@@ -228,6 +230,13 @@ export const AdminOrders: React.FC = () => {
                 <Printer size={18} /> Imprimir Recibo
               </button>
 
+              <button
+                onClick={() => WhatsAppService.sendOrder(selectedOrder, storeConfig?.name)}
+                className="px-6 py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-bold transition-all flex items-center justify-center gap-2"
+              >
+                <MessageCircle size={18} /> Enviar Pedido
+              </button>
+
               {nextStatusLabel(selectedOrder.status) ? (
                 <button
                   onClick={() => {
@@ -358,6 +367,16 @@ export const AdminOrders: React.FC = () => {
                       className="w-full text-left px-4 py-3 text-sm text-slate-300 hover:bg-green-600/10 hover:text-green-400 transition-colors flex items-center gap-2 border-t border-slate-700"
                     >
                       <Printer size={14} /> Imprimir Recibo
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        WhatsAppService.sendOrder(order, storeConfig?.name);
+                        setActiveMenu(null);
+                      }}
+                      className="w-full text-left px-4 py-3 text-sm text-slate-300 hover:bg-emerald-600/10 hover:text-emerald-400 transition-colors flex items-center gap-2 border-t border-slate-700"
+                    >
+                      <MessageCircle size={14} /> Enviar WhatsApp
                     </button>
                     <button
                       onClick={(e) => {
