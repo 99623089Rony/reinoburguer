@@ -311,7 +311,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         items: Array.isArray(o.items) ? o.items : [], timestamp: new Date(o.created_at),
         couponUsed: o.coupon_used,
         rewardTitle: o.reward_title,
-        dailyOrderNumber: o.daily_order_number
+        dailyOrderNumber: o.daily_order_number,
+        deliveryFee: Number(o.delivery_fee) || 0,
+        cardFee: Number(o.card_fee) || 0
       })));
     }
   }, [view, customerProfile?.phone]);

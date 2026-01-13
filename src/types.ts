@@ -40,6 +40,8 @@ export interface Order {
   couponUsed?: string;
   rewardTitle?: string;
   dailyOrderNumber?: number;
+  deliveryFee?: number;
+  cardFee?: number;
 }
 
 export interface Customer {

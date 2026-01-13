@@ -54,10 +54,17 @@ export class WhatsAppService {
         message += `*--------------------------------*\n`;
         message += `Subtotal ......... R$ ${subtotal.toFixed(2).replace('.', ',')}\n`;
 
-        if (fees > 0.05) {
+        if (order.deliveryFee) {
+            message += `Taxa Entrega ..... R$ ${order.deliveryFee.toFixed(2).replace('.', ',')}\n`;
+        }
+        if (order.cardFee) {
+            message += `Taxa Maquininha .. R$ ${order.cardFee.toFixed(2).replace('.', ',')}\n`;
+        }
+
+        if (!order.deliveryFee && !order.cardFee && fees > 0.05) {
             const label = order.address.toUpperCase().includes('RETIRADA') ? 'Taxa Maquininha:' : 'Taxas/Entrega:';
             message += `${label} ..... R$ ${fees.toFixed(2).replace('.', ',')}\n`;
-        } else if (fees < -0.05) {
+        } else if (!order.deliveryFee && !order.cardFee && fees < -0.05) {
             const discount = Math.abs(fees);
             message += `Desconto ......... - R$ ${discount.toFixed(2).replace('.', ',')}\n`;
         }

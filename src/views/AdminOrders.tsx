@@ -212,7 +212,13 @@ export const AdminOrders: React.FC = () => {
                 <div className="text-right">
                   <div className="flex flex-col items-end gap-0.5 mb-2">
                     <p className="text-[10px] text-slate-500 font-bold">SUBTOTAL: R$ {orderSubtotal.toFixed(2).replace('.', ',')}</p>
-                    {totalFees > 0.05 && (
+                    {selectedOrder.deliveryFee ? (
+                      <p className="text-[10px] text-orange-500 font-bold">TAXA ENTREGA: + R$ {selectedOrder.deliveryFee.toFixed(2).replace('.', ',')}</p>
+                    ) : null}
+                    {selectedOrder.cardFee ? (
+                      <p className="text-[10px] text-orange-500 font-bold">TAXA MAQUININHA: + R$ {selectedOrder.cardFee.toFixed(2).replace('.', ',')}</p>
+                    ) : null}
+                    {!selectedOrder.deliveryFee && !selectedOrder.cardFee && totalFees > 0.05 && (
                       <p className="text-[10px] text-orange-500 font-bold">TAXAS: + R$ {totalFees.toFixed(2).replace('.', ',')}</p>
                     )}
                   </div>
