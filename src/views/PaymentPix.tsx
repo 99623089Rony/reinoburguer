@@ -67,7 +67,7 @@ export const PaymentPix: React.FC<PaymentPixProps> = ({ orderId, amount, created
             const { data, error } = await supabase.functions.invoke('create-pix-payment', {
                 body: {
                     orderId,
-                    amount: Number(amount),
+                    amount: Math.round(Number(amount) * 100) / 100,
                     description: `Pedido Reino Burguer #${orderId.slice(-5).toUpperCase()}`,
                 },
             });

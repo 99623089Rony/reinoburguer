@@ -156,7 +156,7 @@ export const CustomerCheckout: React.FC<{
   const cardCreditFee = paymentMethod === 'Crédito' ? (subtotal - discount + currentDeliveryFee) * ((storeConfig?.cardCreditFeePercent || 0) / 100) : 0;
   const pixFee = (paymentMethod === 'Pix' || paymentMethod === 'pix') ? (subtotal - discount + currentDeliveryFee) * ((storeConfig?.pixFeePercent || 0) / 100) : 0;
 
-  const total = Math.max(0, subtotal + currentDeliveryFee - discount + cardDebitFee + cardCreditFee + pixFee);
+  const total = Math.round(Math.max(0, subtotal + currentDeliveryFee - discount + cardDebitFee + cardCreditFee + pixFee) * 100) / 100;
 
   // Block access if store is closed
   if (!isStoreOpen) {
