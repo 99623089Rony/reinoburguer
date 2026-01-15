@@ -7,7 +7,7 @@ import { PrinterService } from '../lib/PrinterService';
 import { WhatsAppService } from '../lib/WhatsAppService';
 import { MessageCircle } from 'lucide-react';
 
-type DateFilterType = 'today' | 'week' | 'month' | 'all';
+type DateFilterType = 'today' | 'week' | 'month' | 'all' | 'custom';
 
 const OrderEditModal: React.FC<{
   order: Order;
@@ -303,6 +303,7 @@ export const AdminOrders: React.FC = () => {
   const [filter, setFilter] = useState<OrderStatus | 'Todos'>('Todos');
   const [dateFilter, setDateFilter] = useState<DateFilterType>('today');
   const [search, setSearch] = useState('');
+  const [customDate, setCustomDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
@@ -334,6 +335,11 @@ export const AdminOrders: React.FC = () => {
         const monthAgo = new Date(now);
         monthAgo.setMonth(monthAgo.getMonth() - 1);
         return orderDateTime >= monthAgo;
+      case 'custom': {
+        const [y, m, d] = customDate.split('-').map(Number);
+        const targetDate = new Date(y, m - 1, d);
+        return orderDateTime.toDateString() === targetDate.toDateString();
+      }
       case 'all':
         return true;
       default:
@@ -615,6 +621,7 @@ export const AdminOrders: React.FC = () => {
             { value: 'today', label: 'Hoje' },
             { value: 'week', label: 'Última Semana' },
             { value: 'month', label: 'Último Mês' },
+            { value: 'custom', label: 'Por Data' },
             { value: 'all', label: 'Todos' }
           ] as { value: DateFilterType; label: string }[]).map(({ value, label }) => (
             <button
@@ -628,6 +635,17 @@ export const AdminOrders: React.FC = () => {
               {label}
             </button>
           ))}
+
+          {dateFilter === 'custom' && (
+            <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2 duration-300">
+              <input
+                type="date"
+                value={customDate}
+                onChange={(e) => setCustomDate(e.target.value)}
+                className="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-white outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              />
+            </div>
+          )}
         </div>
       </div>
 
