@@ -64,9 +64,7 @@ Deno.serve(async (req) => {
                 external_reference: orderId,
                 payer: {
                     email: 'pagamento@reinoburguer.com.br',
-                    first_name: 'Cliente',
-                    last_name: 'Reino Burguer',
-                    identification: { type: 'CPF', number: '19119119100' }
+                    // Note: Removing detailed name/id to see if it bypasses validation issues
                 },
                 date_of_expiration: new Date(Date.now() + 30 * 60000).toISOString(),
                 notification_url: notificationUrl
@@ -80,11 +78,12 @@ Deno.serve(async (req) => {
             console.error('Mercado Pago API Error Details:', JSON.stringify(data, null, 2));
             return new Response(
                 JSON.stringify({
+                    success: false,
                     error: 'Erro na API do Mercado Pago',
-                    message: data.message || 'Erro desconhecido',
+                    message: data.message || (data.cause && data.cause[0]?.description) || 'Erro desconhecido',
                     details: data
                 }),
-                { status: mpResponse.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+                { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } } // Return 200 to bypass Supabase error masking
             );
         }
 
@@ -111,16 +110,18 @@ Deno.serve(async (req) => {
             console.error('Mercado Pago response missing QR code data:', JSON.stringify(data, null, 2));
             return new Response(
                 JSON.stringify({
+                    success: false,
                     error: 'Resposta incompleta do Mercado Pago',
                     message: 'QR Code não foi gerado pelo Mercado Pago.',
                     details: data
                 }),
-                { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+                { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             );
         }
 
         return new Response(
             JSON.stringify({
+                success: true,
                 paymentId: String(data.id),
                 qrCode: data.point_of_interaction.transaction_data.qr_code,
                 qrCodeBase64: data.point_of_interaction.transaction_data.qr_code_base64,

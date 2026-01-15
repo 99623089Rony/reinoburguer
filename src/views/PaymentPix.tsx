@@ -74,22 +74,17 @@ export const PaymentPix: React.FC<PaymentPixProps> = ({ orderId, amount, created
 
             if (error) {
                 console.error('Function execution error:', error);
-
-                // Try to parse detailed error from response
-                let detailedMsg = error.message;
-                try {
-                    const errorData = JSON.parse(error.message);
-                    detailedMsg = errorData.message || errorData.error || error.message;
-                } catch (e) {
-                    // Not JSON, use as is
-                }
-
-                throw new Error(detailedMsg || 'Erro na execução da função no Supabase');
+                throw new Error(error.message || 'Erro na execução da função no Supabase');
             }
 
-            if (!data || !data.qrCode || !data.qrCodeBase64) {
+            if (!data || data.success === false) {
+                console.error('Payment generation failed:', data);
+                throw new Error(data?.message || data?.error || 'Erro ao processar pagamento com Mercado Pago');
+            }
+
+            if (!data.qrCode || !data.qrCodeBase64) {
                 console.error('Invalid response data from function:', data);
-                throw new Error(data?.message || data?.error || 'Resposta inválida da função de pagamento');
+                throw new Error('Resposta incompleta da função de pagamento');
             }
 
             setQrCode(data.qrCode);
@@ -100,7 +95,7 @@ export const PaymentPix: React.FC<PaymentPixProps> = ({ orderId, amount, created
             console.error('Detailed error in createPixPayment:', error);
             const errorMsg = error.message || 'Erro desconhecido';
 
-            alert(`Erro ao gerar PIX: ${errorMsg}\n\nVerifique os logs no Supabase para mais detalhes.`);
+            alert(`Erro ao gerar PIX: ${errorMsg}\n\nSe o erro persistir, verifique suas credenciais do Mercado Pago.`);
         } finally {
             setLoading(false);
         }
