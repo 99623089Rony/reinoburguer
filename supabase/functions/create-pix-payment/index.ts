@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
 
         if (!accessToken) {
             console.error('CRITICAL: MERCADO_PAGO_ACCESS_TOKEN not set.');
-            return new Response(JSON.stringify({ error: 'Configuração ausente: Token MP' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+            return new Response(JSON.stringify({ success: false, error: 'Configuração ausente: Token MP', message: 'Token do Mercado Pago não configurado no Supabase.' }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
         }
 
         // Parse body
@@ -28,13 +28,13 @@ Deno.serve(async (req) => {
         try {
             body = await req.json();
         } catch (e) {
-            return new Response(JSON.stringify({ error: 'Body inválido' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+            return new Response(JSON.stringify({ success: false, error: 'Body inválido', message: 'Corpo da requisição inválido.' }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
         }
 
         const { orderId, amount, description } = body;
 
         if (!orderId || !amount) {
-            return new Response(JSON.stringify({ error: 'Missing orderId or amount' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+            return new Response(JSON.stringify({ success: false, error: 'Missing orderId or amount', message: 'Dados do pedido ou valor ausentes.' }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
         }
 
         console.log(`Processing PIX for Order: ${orderId}, Amount: ${amount}`);
