@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
                 'X-Idempotency-Key': orderId,
             },
             body: JSON.stringify({
-                transaction_amount: Number(amount),
+                transaction_amount: Math.round(Number(amount) * 100) / 100,
                 description: description || `Pedido Reino Burguer #${orderId.slice(-8).toUpperCase()}`,
                 payment_method_id: 'pix',
                 external_reference: orderId,
