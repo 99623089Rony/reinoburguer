@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { MoreVertical, Phone, MapPin, CreditCard, Clock, CheckCircle, Package, Truck, Filter, Search, RotateCcw, Bike, Sandwich, Trash2, ShoppingBag, Printer, Trophy, Plus, Calendar } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
-import { OrderStatus, Order } from '../types';
+import { OrderStatus, Order, Product, CartItem } from '../types';
 import { PrinterService } from '../lib/PrinterService';
 import { WhatsAppService } from '../lib/WhatsAppService';
 import { MessageCircle } from 'lucide-react';
@@ -14,6 +14,7 @@ const OrderEditModal: React.FC<{
   onClose: () => void;
   onSave: (orderId: string, updates: Partial<Order>, sendToWhatsapp?: boolean) => Promise<void>;
 }> = ({ order, onClose, onSave }) => {
+  const { products } = useApp();
   const [name, setName] = useState(order.customerName);
   const [phone, setPhone] = useState(order.phone);
   const [address, setAddress] = useState(order.address);
@@ -22,6 +23,8 @@ const OrderEditModal: React.FC<{
   const [cardFee, setCardFee] = useState(order.cardFee || 0);
   const [items, setItems] = useState(order.items);
   const [loading, setLoading] = useState(false);
+  const [showProductSearch, setShowProductSearch] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const subtotal = items.reduce((acc, item) => {
     const price = Number(item.price) || 0;
@@ -44,6 +47,24 @@ const OrderEditModal: React.FC<{
     }
     setItems(prev => prev.filter(item => item.cartId !== cartId));
   };
+
+  const handleAddProduct = (product: Product) => {
+    const newItem: CartItem = {
+      ...product,
+      cartId: Math.random().toString(36).substr(2, 9),
+      quantity: 1,
+      extras: [],
+      observation: ''
+    };
+    setItems(prev => [...prev, newItem]);
+    setShowProductSearch(false);
+    setSearchTerm('');
+  };
+
+  const filteredProducts = products.filter(p =>
+    p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.category.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const handleSubmit = async (sendToWhatsapp: boolean = false) => {
     setLoading(true);
@@ -73,8 +94,12 @@ const OrderEditModal: React.FC<{
         <div className="flex-1 p-6 md:p-10 space-y-8 overflow-y-auto custom-scrollbar">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-black text-white">Editar Pedido</h2>
-            <button onClick={onClose} className="p-2 hover:bg-slate-800 rounded-full text-slate-400 transition-all">
-              <RotateCcw size={20} className="rotate-45" />
+            <button
+              onClick={onClose}
+              className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl font-bold transition-all group"
+            >
+              <RotateCcw size={18} className="rotate-45 group-hover:rotate-0 transition-transform duration-300" />
+              <span>Voltar</span>
             </button>
           </div>
 
@@ -112,30 +137,82 @@ const OrderEditModal: React.FC<{
           </div>
 
           <div className="space-y-4">
-            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block ml-1">Itens do Pedido</label>
+            <div className="flex items-center justify-between ml-1">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Itens do Pedido</label>
+            </div>
+
             <div className="space-y-3">
               {items.map((item, idx) => (
                 <div key={item.cartId || idx} className="bg-slate-950/50 border border-slate-800/50 p-4 rounded-2xl flex items-center justify-between gap-4 group">
                   <div className="flex-1 min-w-0">
-                    <p className="font-bold text-white text-sm truncate">{item.name}</p>
+                    <p className="font-bold text-white text-sm truncate uppercase tracking-tight">{item.name}</p>
                     {item.extras && item.extras.length > 0 && (
-                      <p className="text-[10px] text-slate-500 truncate">
+                      <p className="text-[10px] text-slate-500 truncate mt-0.5">
                         {item.extras.map(e => e.name).join(', ')}
                       </p>
                     )}
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2 bg-slate-800 rounded-xl p-1">
+                    <div className="flex items-center gap-2 bg-slate-800 rounded-xl p-1 shadow-inner">
                       <button onClick={() => handleUpdateQuantity(item.cartId!, -1)} className="w-8 h-8 rounded-lg hover:bg-slate-700 text-slate-400 transition-all flex items-center justify-center font-bold">-</button>
                       <span className="w-8 text-center text-sm font-black text-white">{item.quantity}</span>
                       <button onClick={() => handleUpdateQuantity(item.cartId!, 1)} className="w-8 h-8 rounded-lg hover:bg-slate-700 text-slate-400 transition-all flex items-center justify-center font-bold">+</button>
                     </div>
-                    <button onClick={() => handleRemoveItem(item.cartId!)} className="p-2 text-slate-500 hover:text-red-500 transition-all group-hover:scale-110">
+                    <button onClick={() => handleRemoveItem(item.cartId!)} className="p-2 text-slate-500 hover:text-red-500 transition-all hover:scale-110">
                       <Trash2 size={18} />
                     </button>
                   </div>
                 </div>
               ))}
+
+              {/* Add Product Section */}
+              {!showProductSearch ? (
+                <button
+                  onClick={() => setShowProductSearch(true)}
+                  className="w-full py-4 border-2 border-dashed border-slate-800 hover:border-orange-500/50 hover:bg-orange-500/5 rounded-2xl transition-all flex items-center justify-center gap-3 group text-slate-500 hover:text-orange-500"
+                >
+                  <Plus className="group-hover:rotate-90 transition-transform" size={20} />
+                  <span className="text-xs font-black uppercase tracking-widest">Adicionar Item</span>
+                </button>
+              ) : (
+                <div className="bg-slate-950 border border-orange-500/30 rounded-2xl p-4 space-y-4 animate-in slide-in-from-top-2 duration-300">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
+                    <input
+                      autoFocus
+                      type="text"
+                      placeholder="Buscar produto..."
+                      value={searchTerm}
+                      onChange={e => setSearchTerm(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-800 pl-10 pr-4 py-3 rounded-xl text-sm text-white outline-none focus:border-orange-500 transition-all"
+                    />
+                  </div>
+                  <div className="max-h-48 overflow-y-auto custom-scrollbar space-y-1">
+                    {filteredProducts.map(product => (
+                      <button
+                        key={product.id}
+                        onClick={() => handleAddProduct(product)}
+                        className="w-full text-left p-3 hover:bg-slate-800 rounded-xl transition-all flex justify-between items-center group"
+                      >
+                        <div>
+                          <p className="text-sm font-bold text-slate-200 group-hover:text-orange-400">{product.name}</p>
+                          <p className="text-[10px] text-slate-500">{product.category}</p>
+                        </div>
+                        <span className="text-xs font-black text-slate-400">R$ {product.price.toFixed(2)}</span>
+                      </button>
+                    ))}
+                    {filteredProducts.length === 0 && (
+                      <p className="text-center py-4 text-xs text-slate-600">Nenhum produto encontrado.</p>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => setShowProductSearch(false)}
+                    className="w-full py-2 text-xs font-bold text-slate-500 hover:text-slate-300"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
