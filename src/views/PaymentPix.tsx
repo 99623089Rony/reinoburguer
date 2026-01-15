@@ -74,12 +74,22 @@ export const PaymentPix: React.FC<PaymentPixProps> = ({ orderId, amount, created
 
             if (error) {
                 console.error('Function execution error:', error);
-                throw new Error(error.message || 'Erro na execução da função no Supabase');
+
+                // Try to parse detailed error from response
+                let detailedMsg = error.message;
+                try {
+                    const errorData = JSON.parse(error.message);
+                    detailedMsg = errorData.message || errorData.error || error.message;
+                } catch (e) {
+                    // Not JSON, use as is
+                }
+
+                throw new Error(detailedMsg || 'Erro na execução da função no Supabase');
             }
 
             if (!data || !data.qrCode || !data.qrCodeBase64) {
                 console.error('Invalid response data from function:', data);
-                throw new Error(data.error || 'Resposta inválida da função de pagamento');
+                throw new Error(data?.message || data?.error || 'Resposta inválida da função de pagamento');
             }
 
             setQrCode(data.qrCode);
@@ -90,11 +100,7 @@ export const PaymentPix: React.FC<PaymentPixProps> = ({ orderId, amount, created
             console.error('Detailed error in createPixPayment:', error);
             const errorMsg = error.message || 'Erro desconhecido';
 
-            // Local simulation fallback for testing
-            // Mock removed for production testing
-            // if (window.location.hostname === 'localhost') { ... }
-
-            alert(`Erro ao gerar PIX: ${errorMsg}\n\nDica: Verifique se o código da função foi enviado ao Supabase e se o token do Mercado Pago está configurado no painel de Secrets.`);
+            alert(`Erro ao gerar PIX: ${errorMsg}\n\nVerifique os logs no Supabase para mais detalhes.`);
         } finally {
             setLoading(false);
         }

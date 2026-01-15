@@ -61,6 +61,7 @@ Deno.serve(async (req) => {
                 transaction_amount: Number(amount),
                 description: description || `Pedido Reino Burguer #${orderId.slice(-8).toUpperCase()}`,
                 payment_method_id: 'pix',
+                external_reference: orderId,
                 payer: {
                     email: 'pagamento@reinoburguer.com.br',
                     first_name: 'Cliente',
@@ -75,9 +76,14 @@ Deno.serve(async (req) => {
         const data = await mpResponse.json();
 
         if (!mpResponse.ok) {
-            console.error('Mercado Pago API Error:', JSON.stringify(data, null, 2));
+            console.error('Mercado Pago API Error Status:', mpResponse.status);
+            console.error('Mercado Pago API Error Details:', JSON.stringify(data, null, 2));
             return new Response(
-                JSON.stringify({ error: 'Erro na API do Mercado Pago', details: data }),
+                JSON.stringify({
+                    error: 'Erro na API do Mercado Pago',
+                    message: data.message || 'Erro desconhecido',
+                    details: data
+                }),
                 { status: mpResponse.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             );
         }
@@ -106,8 +112,8 @@ Deno.serve(async (req) => {
             return new Response(
                 JSON.stringify({
                     error: 'Resposta incompleta do Mercado Pago',
-                    details: 'QR Code não foi gerado. Verifique suas credenciais do Mercado Pago.',
-                    responseData: data
+                    message: 'QR Code não foi gerado pelo Mercado Pago.',
+                    details: data
                 }),
                 { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             );
