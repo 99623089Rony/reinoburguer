@@ -9,12 +9,225 @@ import { MessageCircle } from 'lucide-react';
 
 type DateFilterType = 'today' | 'week' | 'month' | 'all';
 
+const OrderEditModal: React.FC<{
+  order: Order;
+  onClose: () => void;
+  onSave: (orderId: string, updates: Partial<Order>, sendToWhatsapp?: boolean) => Promise<void>;
+}> = ({ order, onClose, onSave }) => {
+  const [name, setName] = useState(order.customerName);
+  const [phone, setPhone] = useState(order.phone);
+  const [address, setAddress] = useState(order.address);
+  const [paymentMethod, setPaymentMethod] = useState(order.paymentMethod);
+  const [deliveryFee, setDeliveryFee] = useState(order.deliveryFee || 0);
+  const [cardFee, setCardFee] = useState(order.cardFee || 0);
+  const [items, setItems] = useState(order.items);
+  const [loading, setLoading] = useState(false);
+
+  const subtotal = items.reduce((acc, item) => {
+    const price = Number(item.price) || 0;
+    const extras = item.extras?.reduce((sum, e) => sum + (Number(e.price) || 0), 0) || 0;
+    return acc + (price + extras) * item.quantity;
+  }, 0);
+
+  const total = Math.round((subtotal + deliveryFee + cardFee) * 100) / 100;
+
+  const handleUpdateQuantity = (cartId: string, delta: number) => {
+    setItems(prev => prev.map(item =>
+      item.cartId === cartId ? { ...item, quantity: Math.max(1, item.quantity + delta) } : item
+    ));
+  };
+
+  const handleRemoveItem = (cartId: string) => {
+    if (items.length === 1) {
+      alert('O pedido deve ter pelo menos um item.');
+      return;
+    }
+    setItems(prev => prev.filter(item => item.cartId !== cartId));
+  };
+
+  const handleSubmit = async (sendToWhatsapp: boolean = false) => {
+    setLoading(true);
+    try {
+      await onSave(order.id, {
+        customerName: name,
+        phone,
+        address,
+        paymentMethod,
+        deliveryFee,
+        cardFee,
+        items,
+        total
+      }, sendToWhatsapp);
+      onClose();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-xl z-[200] flex items-center justify-center p-4 md:p-8 overflow-y-auto">
+      <div className="bg-slate-900 border border-slate-800 w-full max-w-4xl rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col md:flex-row max-h-[90vh]">
+        {/* Left Side: Form */}
+        <div className="flex-1 p-6 md:p-10 space-y-8 overflow-y-auto custom-scrollbar">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-black text-white">Editar Pedido</h2>
+            <button onClick={onClose} className="p-2 hover:bg-slate-800 rounded-full text-slate-400 transition-all">
+              <RotateCcw size={20} className="rotate-45" />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block ml-1">Cliente</label>
+              <input
+                type="text"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                placeholder="Nome do cliente"
+                className="w-full bg-slate-950 border border-slate-800 p-4 rounded-2xl text-white outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all text-sm font-bold"
+              />
+            </div>
+            <div className="space-y-4">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block ml-1">Telefone</label>
+              <input
+                type="text"
+                value={phone}
+                onChange={e => setPhone(e.target.value)}
+                placeholder="(00) 00000-0000"
+                className="w-full bg-slate-950 border border-slate-800 p-4 rounded-2xl text-white outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all text-sm font-bold"
+              />
+            </div>
+            <div className="md:col-span-2 space-y-4">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block ml-1">Endereço / Observações de Entrega</label>
+              <textarea
+                value={address}
+                onChange={e => setAddress(e.target.value)}
+                placeholder="Endereço completo"
+                rows={3}
+                className="w-full bg-slate-950 border border-slate-800 p-4 rounded-2xl text-white outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all text-sm font-bold resize-none"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block ml-1">Itens do Pedido</label>
+            <div className="space-y-3">
+              {items.map((item, idx) => (
+                <div key={item.cartId || idx} className="bg-slate-950/50 border border-slate-800/50 p-4 rounded-2xl flex items-center justify-between gap-4 group">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-white text-sm truncate">{item.name}</p>
+                    {item.extras && item.extras.length > 0 && (
+                      <p className="text-[10px] text-slate-500 truncate">
+                        {item.extras.map(e => e.name).join(', ')}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 bg-slate-800 rounded-xl p-1">
+                      <button onClick={() => handleUpdateQuantity(item.cartId!, -1)} className="w-8 h-8 rounded-lg hover:bg-slate-700 text-slate-400 transition-all flex items-center justify-center font-bold">-</button>
+                      <span className="w-8 text-center text-sm font-black text-white">{item.quantity}</span>
+                      <button onClick={() => handleUpdateQuantity(item.cartId!, 1)} className="w-8 h-8 rounded-lg hover:bg-slate-700 text-slate-400 transition-all flex items-center justify-center font-bold">+</button>
+                    </div>
+                    <button onClick={() => handleRemoveItem(item.cartId!)} className="p-2 text-slate-500 hover:text-red-500 transition-all group-hover:scale-110">
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Right Side: Totals & Summary */}
+        <div className="w-full md:w-80 bg-slate-950/50 border-t md:border-t-0 md:border-l border-slate-800 p-6 md:p-10 flex flex-col justify-between">
+          <div className="space-y-6">
+            <h3 className="text-[10px] font-black text-orange-500 uppercase tracking-[0.2em] mb-4">Resumo e Taxas</h3>
+
+            <div className="space-y-4">
+              <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Pagamento</label>
+              <select
+                value={paymentMethod}
+                onChange={e => setPaymentMethod(e.target.value)}
+                className="w-full bg-slate-900 border border-slate-800 p-3 rounded-xl text-xs font-bold text-white outline-none focus:ring-2 focus:ring-orange-500/20"
+              >
+                <option value="Pix">Pix</option>
+                <option value="Dinheiro">Dinheiro</option>
+                <option value="Cartão de Crédito">Cartão de Crédito</option>
+                <option value="Cartão de Débito">Cartão de Débito</option>
+              </select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Taxa Ent.</label>
+                <input
+                  type="number"
+                  value={deliveryFee}
+                  onChange={e => setDeliveryFee(Number(e.target.value))}
+                  className="w-full bg-slate-900 border border-slate-800 p-3 rounded-xl text-xs font-bold text-white outline-none"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-slate-500 uppercase ml-1">Taxa Cart.</label>
+                <input
+                  type="number"
+                  value={cardFee}
+                  onChange={e => setCardFee(Number(e.target.value))}
+                  className="w-full bg-slate-900 border border-slate-800 p-3 rounded-xl text-xs font-bold text-white outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="pt-6 border-t border-slate-800 space-y-2">
+              <div className="flex justify-between text-xs text-slate-500 font-bold">
+                <span>Subtotal</span>
+                <span>R$ {subtotal.toFixed(2).replace('.', ',')}</span>
+              </div>
+              <div className="flex justify-between text-xs text-orange-500/80 font-bold">
+                <span>Taxas</span>
+                <span>+ R$ {(deliveryFee + cardFee).toFixed(2).replace('.', ',')}</span>
+              </div>
+              <div className="flex justify-between items-end pt-2">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest pb-1">Total Final</span>
+                <span className="text-3xl font-black text-orange-500">R$ {total.toFixed(2).replace('.', ',')}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-8 space-y-3">
+            <button
+              onClick={() => handleSubmit(false)}
+              disabled={loading}
+              className="w-full py-4 bg-slate-800 hover:bg-slate-700 text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all disabled:opacity-50"
+            >
+              {loading ? 'Salvando...' : 'Apenas Salvar'}
+            </button>
+            <button
+              onClick={() => handleSubmit(true)}
+              disabled={loading}
+              className="w-full py-4 bg-orange-600 hover:bg-orange-500 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-orange-900/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              <MessageCircle size={16} /> Salvar e Enviar ZAP
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+type OrderEditModalType = typeof OrderEditModal; // For internal reference if needed
+
+
 export const AdminOrders: React.FC = () => {
-  const { orders, updateOrderStatus, deleteOrder, storeConfig } = useApp();
+  const { orders, updateOrderStatus, updateOrder, deleteOrder, storeConfig } = useApp();
   const [filter, setFilter] = useState<OrderStatus | 'Todos'>('Todos');
   const [dateFilter, setDateFilter] = useState<DateFilterType>('today');
   const [search, setSearch] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [editingOrder, setEditingOrder] = useState<Order | null>(null);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
 
   const orderSubtotal = React.useMemo(() => {
@@ -102,6 +315,27 @@ export const AdminOrders: React.FC = () => {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500" onClick={() => setActiveMenu(null)}>
+
+      {/* Edit Modal */}
+      {editingOrder && (
+        <OrderEditModal
+          order={editingOrder}
+          onClose={() => setEditingOrder(null)}
+          onSave={async (orderId, updates, sendToWhatsapp) => {
+            const currentOrder = orders.find(o => o.id === orderId);
+            if (!currentOrder) return;
+
+            // Merge updates with current order for WhatsAppService
+            const updatedOrder = { ...currentOrder, ...updates };
+
+            await updateOrder(orderId, updates);
+
+            if (sendToWhatsapp) {
+              WhatsAppService.sendOrder(updatedOrder as Order, storeConfig?.name);
+            }
+          }}
+        />
+      )}
 
       {/* Detail Modal */}
       {selectedOrder && (
@@ -375,6 +609,16 @@ export const AdminOrders: React.FC = () => {
                       className="w-full text-left px-4 py-3 text-sm text-slate-300 hover:bg-green-600/10 hover:text-green-400 transition-colors flex items-center gap-2 border-t border-slate-700"
                     >
                       <Printer size={14} /> Imprimir Recibo
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingOrder(order);
+                        setActiveMenu(null);
+                      }}
+                      className="w-full text-left px-4 py-3 text-sm text-slate-300 hover:bg-orange-600/10 hover:text-orange-400 transition-colors flex items-center gap-2 border-t border-slate-700"
+                    >
+                      <Plus size={14} className="rotate-45" /> Editar Pedido
                     </button>
                     <button
                       onClick={(e) => {

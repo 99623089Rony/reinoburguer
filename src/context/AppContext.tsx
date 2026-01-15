@@ -22,6 +22,7 @@ interface AppContextType {
   customerProfile: Partial<Customer> | null;
   updateCustomerProfile: (profile: Partial<Customer>) => Promise<void>;
   updateOrderStatus: (orderId: string, status: OrderStatus) => void;
+  updateOrder: (orderId: string, updates: Partial<Order>) => Promise<void>;
   playNotificationSound: () => void;
   stopNotificationSound: () => void;
   deleteOrder: (orderId: string) => Promise<void>;
@@ -496,6 +497,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [orders, fetchCustomers, stopNotificationSound, fetchOrders]);
 
+  const updateOrder = useCallback(async (orderId: string, updates: Partial<Order>) => {
+    // Map to DB fields
+    const mapped: any = {};
+    if (updates.customerName !== undefined) mapped.customer_name = updates.customerName;
+    if (updates.phone !== undefined) mapped.phone = updates.phone;
+    if (updates.address !== undefined) mapped.address = updates.address;
+    if (updates.total !== undefined) mapped.total = updates.total;
+    if (updates.paymentMethod !== undefined) mapped.payment_method = updates.paymentMethod;
+    if (updates.status !== undefined) mapped.status = updates.status;
+    if (updates.items !== undefined) mapped.items = updates.items;
+    if (updates.deliveryFee !== undefined) mapped.delivery_fee = updates.deliveryFee;
+    if (updates.cardFee !== undefined) mapped.card_fee = updates.cardFee;
+
+    const { error } = await supabase.from('orders').update(mapped).eq('id', orderId);
+    if (error) {
+      console.error('❌ Error updating order:', error);
+      alert('Erro ao atualizar pedido: ' + error.message);
+    } else {
+      console.log('✅ Order updated successfully');
+      fetchOrders();
+    }
+  }, [fetchOrders]);
+
   const checkStoreStatus = useCallback(() => {
     if (openingHours.length === 0) return setIsStoreOpen(false);
     const now = new Date();
@@ -619,7 +643,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         ? { ...customerProfile, ...(customers.find(c => c.phone === customerProfile?.phone)) }
         : customerProfile,
       updateCustomerProfile,
-      updateOrderStatus, playNotificationSound, stopNotificationSound,
+      updateOrderStatus, updateOrder, playNotificationSound, stopNotificationSound,
       deleteOrder: async (id) => { await supabase.from('orders').delete().eq('id', id); setOrders(p => p.filter(o => o.id !== id)); },
       addProduct: async (p) => {
         const mapped = {
