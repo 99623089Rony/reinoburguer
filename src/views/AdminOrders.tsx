@@ -14,7 +14,7 @@ const OrderEditModal: React.FC<{
   onClose: () => void;
   onSave: (orderId: string, updates: Partial<Order>, sendToWhatsapp?: boolean) => Promise<void>;
 }> = ({ order, onClose, onSave }) => {
-  const { products } = useApp();
+  const { products, storeConfig } = useApp();
   const [name, setName] = useState(order.customerName);
   const [phone, setPhone] = useState(order.phone);
   const [address, setAddress] = useState(order.address);
@@ -25,12 +25,32 @@ const OrderEditModal: React.FC<{
   const [loading, setLoading] = useState(false);
   const [showProductSearch, setShowProductSearch] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [manualCardFee, setManualCardFee] = useState(false); // Flag to check if user manually edited the fee
 
   const subtotal = items.reduce((acc, item) => {
     const price = Number(item.price) || 0;
     const extras = item.extras?.reduce((sum, e) => sum + (Number(e.price) || 0), 0) || 0;
     return acc + (price + extras) * item.quantity;
   }, 0);
+
+  // Auto-calculate card fee
+  React.useEffect(() => {
+    if (!storeConfig || manualCardFee) return;
+
+    const baseForFee = subtotal + deliveryFee;
+    const method = paymentMethod.toLowerCase();
+    let newCardFee = 0;
+
+    if (method.includes('crédito')) {
+      newCardFee = baseForFee * ((storeConfig.cardCreditFeePercent || 0) / 100);
+    } else if (method.includes('débito')) {
+      newCardFee = baseForFee * ((storeConfig.cardDebitFeePercent || 0) / 100);
+    } else if (method.includes('pix')) {
+      newCardFee = baseForFee * ((storeConfig.pixFeePercent || 0) / 100);
+    }
+
+    setCardFee(Math.round(newCardFee * 100) / 100);
+  }, [subtotal, deliveryFee, paymentMethod, storeConfig, manualCardFee]);
 
   const total = Math.round((subtotal + deliveryFee + cardFee) * 100) / 100;
 
@@ -251,7 +271,10 @@ const OrderEditModal: React.FC<{
                 <input
                   type="number"
                   value={cardFee}
-                  onChange={e => setCardFee(Number(e.target.value))}
+                  onChange={e => {
+                    setCardFee(Number(e.target.value));
+                    setManualCardFee(true);
+                  }}
                   className="w-full bg-slate-900 border border-slate-800 p-3 rounded-xl text-xs font-bold text-white outline-none"
                 />
               </div>

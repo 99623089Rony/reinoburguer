@@ -81,20 +81,29 @@ export const AdminManualOrder: React.FC<AdminManualOrderProps> = ({ onBack, onSu
     };
 
     const cartSubtotal = cart.reduce((acc, item) => {
-        return acc + (item.product.price * item.quantity);
+        const itemBasePrice = Number(item.product.price) || 0;
+        const extrasTotal = item.extras?.reduce((sum, e) => sum + (Number(e.price) || 0), 0) || 0;
+        return acc + ((itemBasePrice + extrasTotal) * item.quantity);
     }, 0);
 
     const cardFee = useMemo(() => {
         if (!storeConfig) return 0;
-        const baseForFee = cartSubtotal;
-        if (paymentMethod === 'Cartão de Crédito') {
+        // Logic should match CustomerCheckout.tsx: (subtotal + deliveryFee) * percent
+        const currentDeliveryFee = deliveryMethod === 'DELIVERY' ? deliveryFee : 0;
+        const baseForFee = cartSubtotal + currentDeliveryFee;
+
+        const method = paymentMethod.toLowerCase();
+        if (method.includes('crédito')) {
             return baseForFee * ((storeConfig.cardCreditFeePercent || 0) / 100);
         }
-        if (paymentMethod === 'Cartão de Débito') {
+        if (method.includes('débito')) {
             return baseForFee * ((storeConfig.cardDebitFeePercent || 0) / 100);
         }
+        if (method.includes('pix')) {
+            return baseForFee * ((storeConfig.pixFeePercent || 0) / 100);
+        }
         return 0;
-    }, [paymentMethod, cartSubtotal, storeConfig]);
+    }, [paymentMethod, cartSubtotal, deliveryFee, deliveryMethod, storeConfig]);
 
     const total = cartSubtotal + (deliveryMethod === 'DELIVERY' ? deliveryFee : 0) + cardFee;
 
@@ -133,8 +142,10 @@ export const AdminManualOrder: React.FC<AdminManualOrderProps> = ({ onBack, onSu
                 customer_name: customerName,
                 phone: customerPhone,
                 address: finalAddress,
-                total: total,
+                total: Math.round(total * 100) / 100,
                 payment_method: paymentMethod,
+                delivery_fee: deliveryMethod === 'DELIVERY' ? deliveryFee : 0,
+                card_fee: Math.round(cardFee * 100) / 100,
                 items: cart.map(item => ({
                     id: item.product.id,
                     name: item.product.name,
