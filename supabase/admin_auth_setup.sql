@@ -32,7 +32,7 @@ CREATE POLICY "Allow public insert access" ON admin_access_requests FOR INSERT W
 
 -- Policy: Allow admins to view/update requests
 CREATE POLICY "Allow admin full access" ON admin_access_requests FOR ALL USING (
-    (SELECT email FROM auth.users WHERE id = auth.uid()) IN (SELECT email FROM admin_users)
+    public.is_admin()
 );
 
 -- Insert the Master Admin

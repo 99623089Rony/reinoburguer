@@ -28,7 +28,7 @@ BEGIN
     END IF;
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- Trigger: Run after update on orders
 DROP TRIGGER IF EXISTS on_order_completion ON public.orders;

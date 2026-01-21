@@ -37,7 +37,7 @@ BEGIN
     SELECT is_admin FROM public.profiles WHERE id = auth.uid()
   );
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- 4. Public Read Policies (Static Content)
 CREATE POLICY "Public Read Access" ON "public"."categories" FOR SELECT USING (true);
@@ -52,7 +52,7 @@ CREATE POLICY "Public Read Access" ON "public"."extras_options" FOR SELECT USING
 
 -- 5. Orders Policies
 CREATE POLICY "Public Insert Orders" ON "public"."orders" FOR INSERT WITH CHECK (true);
-CREATE POLICY "Public Read Own Orders" ON "public"."orders" FOR SELECT USING (true);
+CREATE POLICY "Public Read Own Orders" ON "public"."orders" FOR SELECT USING (true); -- Note: Filtering happens in frontend via phone
 
 -- 6. Customers & Coupons Policies
 CREATE POLICY "Public Upsert Customers" ON "public"."customers" FOR ALL USING (true) WITH CHECK (true);
@@ -74,3 +74,5 @@ CREATE POLICY "Admin Full Access Extras Options" ON "public"."extras_options" FO
 CREATE POLICY "Admin Full Access Orders" ON "public"."orders" FOR ALL USING (public.is_admin());
 CREATE POLICY "Admin Full Access Customers" ON "public"."customers" FOR ALL USING (public.is_admin());
 CREATE POLICY "Admin Full Access Coupons" ON "public"."coupons" FOR ALL USING (public.is_admin());
+CREATE POLICY "Admin Full Access Profiles" ON "public"."profiles" FOR ALL USING (public.is_admin());
+CREATE POLICY "Admin Full Access Admin Users" ON "public"."admin_users" FOR ALL USING (public.is_admin());

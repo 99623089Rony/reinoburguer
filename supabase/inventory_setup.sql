@@ -16,4 +16,4 @@ BEGIN
       END
   WHERE id = p_id AND track_stock = true;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
