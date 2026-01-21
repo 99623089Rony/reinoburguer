@@ -51,11 +51,20 @@ CREATE POLICY "Public Read Access" ON "public"."extras_groups" FOR SELECT USING 
 CREATE POLICY "Public Read Access" ON "public"."extras_options" FOR SELECT USING (true);
 
 -- 5. Orders Policies
-CREATE POLICY "Public Insert Orders" ON "public"."orders" FOR INSERT WITH CHECK (true);
-CREATE POLICY "Public Read Own Orders" ON "public"."orders" FOR SELECT USING (true); -- Note: Filtering happens in frontend via phone
+CREATE POLICY "Public Insert Orders" ON "public"."orders" FOR INSERT WITH CHECK (
+  phone IS NOT NULL AND items IS NOT NULL AND total > 0 AND length(phone) >= 8
+);
+CREATE POLICY "Public Read Own Orders" ON "public"."orders" FOR SELECT USING (
+  created_at > (now() - interval '90 days') AND phone IS NOT NULL
+); -- Note: Public access restricted to recent orders with phone
 
 -- 6. Customers & Coupons Policies
-CREATE POLICY "Public Upsert Customers" ON "public"."customers" FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Public Insert Customers" ON "public"."customers" FOR INSERT WITH CHECK (
+  phone IS NOT NULL AND name IS NOT NULL AND length(phone) >= 8
+);
+CREATE POLICY "Public Update Customers" ON "public"."customers" FOR UPDATE USING (
+  phone IS NOT NULL AND name IS NOT NULL
+);
 CREATE POLICY "Public Read Own Coupons" ON "public"."coupons" FOR SELECT USING (true);
 
 -- 7. Transactions (Admin Only)

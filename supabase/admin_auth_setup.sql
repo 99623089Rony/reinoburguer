@@ -27,8 +27,12 @@ CREATE TABLE IF NOT EXISTS admin_access_requests (
 -- Enable RLS
 ALTER TABLE admin_access_requests ENABLE ROW LEVEL SECURITY;
 
--- Policy: Allow anyone to insert (for registration requests)
-CREATE POLICY "Allow public insert access" ON admin_access_requests FOR INSERT WITH CHECK (true);
+-- Policy: Allow anyone to insert (for registration requests) with basic validation
+CREATE POLICY "Allow public insert access" ON admin_access_requests FOR INSERT WITH CHECK (
+    email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$' 
+    AND name IS NOT NULL 
+    AND length(name) > 1
+);
 
 -- Policy: Allow admins to view/update requests
 CREATE POLICY "Allow admin full access" ON admin_access_requests FOR ALL USING (

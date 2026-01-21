@@ -57,9 +57,13 @@ FOR SELECT USING (true);
 CREATE POLICY "admin_write_admin_users" ON admin_users
 FOR ALL USING (public.is_admin());
 
--- admin_access_requests: Todos podem inserir (para cadastro)
+-- admin_access_requests: Todos podem inserir (para cadastro) com validação básica
 CREATE POLICY "public_insert_requests" ON admin_access_requests
-FOR INSERT WITH CHECK (true);
+FOR INSERT WITH CHECK (
+    email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$' 
+    AND name IS NOT NULL 
+    AND length(name) > 1
+);
 
 -- admin_access_requests: Apenas admins podem ver e gerenciar
 CREATE POLICY "admin_all_access_requests" ON admin_access_requests
