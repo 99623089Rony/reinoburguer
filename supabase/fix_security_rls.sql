@@ -34,7 +34,7 @@ CREATE OR REPLACE FUNCTION public.is_admin()
 RETURNS boolean AS $$
 BEGIN
   RETURN (
-    SELECT is_admin FROM public.profiles WHERE id = auth.uid()
+    SELECT is_admin FROM public.profiles WHERE id = (SELECT auth.uid())
   );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
