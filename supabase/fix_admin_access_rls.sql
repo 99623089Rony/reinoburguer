@@ -49,24 +49,21 @@ ALTER TABLE admin_access_requests ENABLE ROW LEVEL SECURITY;
 
 -- PASSO 6: Criar políticas SIMPLES que funcionam
 
--- admin_users: Todos podem ler
+-- admin_users: Todos podem ler (para login)
 CREATE POLICY "public_read_admin_users" ON admin_users
 FOR SELECT USING (true);
 
--- admin_users: Autenticados podem inserir/atualizar/deletar
-CREATE POLICY "auth_write_admin_users" ON admin_users
-FOR ALL USING (auth.role() = 'authenticated');
+-- admin_users: Apenas admins podem alterar
+CREATE POLICY "admin_write_admin_users" ON admin_users
+FOR ALL USING (public.is_admin());
 
 -- admin_access_requests: Todos podem inserir (para cadastro)
 CREATE POLICY "public_insert_requests" ON admin_access_requests
 FOR INSERT WITH CHECK (true);
 
--- admin_access_requests: Autenticados podem ler e atualizar
-CREATE POLICY "auth_select_requests" ON admin_access_requests
-FOR SELECT USING (auth.role() = 'authenticated');
-
-CREATE POLICY "auth_update_requests" ON admin_access_requests
-FOR UPDATE USING (auth.role() = 'authenticated');
+-- admin_access_requests: Apenas admins podem ver e gerenciar
+CREATE POLICY "admin_all_access_requests" ON admin_access_requests
+FOR ALL USING (public.is_admin());
 
 -- ============================================
 -- VERIFICAÇÃO: Execute este SELECT para testar

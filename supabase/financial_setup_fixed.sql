@@ -24,11 +24,8 @@ DROP POLICY IF EXISTS "Enable all for authenticated users" ON public.transaction
 DROP POLICY IF EXISTS "Enable read/write for all" ON public.transactions;
 
 -- Create policies
-CREATE POLICY "Enable all for authenticated users" ON public.transactions
-    FOR ALL USING (true) WITH CHECK (true);
-
-CREATE POLICY "Enable read/write for all" ON public.transactions
-    FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Admin All Access Transactions" ON public.transactions
+    FOR ALL USING (public.is_admin());
 
 -- Enable Realtime (ignora se já estiver adicionado)
 DO $$

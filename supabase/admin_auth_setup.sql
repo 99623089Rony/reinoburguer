@@ -11,8 +11,8 @@ ALTER TABLE admin_users ENABLE ROW LEVEL SECURITY;
 
 -- Policy: Allow anyone to read admin_users (needed for checking permissions during login/register)
 CREATE POLICY "Allow public read access" ON admin_users FOR SELECT USING (true);
--- Policy: Allow authenticated admins to insert/update/delete
-CREATE POLICY "Allow admin write access" ON admin_users FOR ALL USING (auth.uid() IN (SELECT id FROM auth.users WHERE email IN (SELECT email FROM admin_users)));
+-- Policy: Allow admins to manage admin_users
+CREATE POLICY "Allow admin write access" ON admin_users FOR ALL USING (public.is_admin());
 
 
 -- Create admin_access_requests table
