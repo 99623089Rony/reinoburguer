@@ -1,45 +1,40 @@
--- Create admin_users table if it doesn't exist
-CREATE TABLE IF NOT EXISTS admin_users (
+-- Admin Auth Setup (Zero-Overlap RLS)
+-- Tabelas básicas para gestão de administradores
+
+-- 1. admin_users
+CREATE TABLE IF NOT EXISTS public.admin_users (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     email TEXT NOT NULL UNIQUE,
     role TEXT DEFAULT 'admin',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- Enable RLS
-ALTER TABLE admin_users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.admin_users ENABLE ROW LEVEL SECURITY;
 
--- Policy: Allow anyone to read admin_users (needed for checking permissions during login/register)
-CREATE POLICY "Allow public read access" ON admin_users FOR SELECT USING (true);
--- Policy: Allow admins to manage admin_users
-CREATE POLICY "Allow admin write access" ON admin_users FOR ALL USING (public.is_admin());
+CREATE POLICY "Select admin_users" ON public.admin_users FOR SELECT USING (true);
+CREATE POLICY "Insert admin_users" ON public.admin_users FOR INSERT WITH CHECK (public.is_admin());
+CREATE POLICY "Update admin_users" ON public.admin_users FOR UPDATE USING (public.is_admin());
+CREATE POLICY "Delete admin_users" ON public.admin_users FOR DELETE USING (public.is_admin());
 
-
--- Create admin_access_requests table
-CREATE TABLE IF NOT EXISTS admin_access_requests (
+-- 2. admin_access_requests
+CREATE TABLE IF NOT EXISTS public.admin_access_requests (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     email TEXT NOT NULL,
     name TEXT,
-    status TEXT DEFAULT 'pending', -- pending, approved, rejected
+    status TEXT DEFAULT 'pending',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- Enable RLS
-ALTER TABLE admin_access_requests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.admin_access_requests ENABLE ROW LEVEL SECURITY;
 
--- Policy: Allow anyone to insert (for registration requests) with basic validation
-CREATE POLICY "Allow public insert access" ON admin_access_requests FOR INSERT WITH CHECK (
-    email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$' 
-    AND name IS NOT NULL 
-    AND length(name) > 1
+CREATE POLICY "Select admin_access_requests" ON public.admin_access_requests FOR SELECT USING (public.is_admin());
+CREATE POLICY "Insert admin_access_requests" ON public.admin_access_requests FOR INSERT WITH CHECK (
+    public.is_admin() OR (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$' AND name IS NOT NULL AND length(name) > 1)
 );
+CREATE POLICY "Update admin_access_requests" ON public.admin_access_requests FOR UPDATE USING (public.is_admin());
+CREATE POLICY "Delete admin_access_requests" ON public.admin_access_requests FOR DELETE USING (public.is_admin());
 
--- Policy: Allow admins to view/update requests
-CREATE POLICY "Allow admin full access" ON admin_access_requests FOR ALL USING (
-    public.is_admin()
-);
-
--- Insert the Master Admin
-INSERT INTO admin_users (email, role)
+-- 3. Master Admin
+INSERT INTO public.admin_users (email, role)
 VALUES ('ronilsondesouza159@gmail.com', 'master')
 ON CONFLICT (email) DO NOTHING;

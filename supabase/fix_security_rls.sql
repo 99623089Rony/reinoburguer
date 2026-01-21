@@ -1,35 +1,22 @@
--- Fix Security RLS Issues
--- This script enables Row Level Security (RLS) on all public tables and sets up secure policies.
+-- NUCLEAR RLS CONSOLIDATION - FINAL STATE (ZERO OVERLAP)
+-- Este script limpa todas as regras e as recria seguindo o padrão de comando único.
 
--- 1. Enable RLS on all relevant tables
-ALTER TABLE "public"."categories" ENABLE ROW LEVEL SECURITY;
-ALTER TABLE "public"."customers" ENABLE ROW LEVEL SECURITY;
-ALTER TABLE "public"."orders" ENABLE ROW LEVEL SECURITY;
-ALTER TABLE "public"."product_extras" ENABLE ROW LEVEL SECURITY;
-ALTER TABLE "public"."products" ENABLE ROW LEVEL SECURITY;
-ALTER TABLE "public"."store_config" ENABLE ROW LEVEL SECURITY;
-ALTER TABLE "public"."transactions" ENABLE ROW LEVEL SECURITY;
-ALTER TABLE "public"."opening_hours" ENABLE ROW LEVEL SECURITY;
-ALTER TABLE "public"."delivery_fees" ENABLE ROW LEVEL SECURITY;
-ALTER TABLE "public"."rewards" ENABLE ROW LEVEL SECURITY;
-ALTER TABLE "public"."extras_groups" ENABLE ROW LEVEL SECURITY;
-ALTER TABLE "public"."extras_options" ENABLE ROW LEVEL SECURITY;
-ALTER TABLE "public"."coupons" ENABLE ROW LEVEL SECURITY;
+-- 1. LIMPEZA TOTAL
+DO $$ 
+DECLARE 
+    tbl RECORD;
+    pol RECORD;
+BEGIN
+    FOR tbl IN SELECT tablename FROM pg_tables WHERE schemaname = 'public'
+    LOOP
+        FOR pol IN SELECT policyname FROM pg_policies WHERE schemaname = 'public' AND tablename = tbl.tablename
+        LOOP
+            EXECUTE format('DROP POLICY IF EXISTS %I ON %I.%I', pol.policyname, 'public', tbl.tablename);
+        END LOOP;
+    END LOOP;
+END $$;
 
--- 2. Drop existing dangerous or redundant policies
-DROP POLICY IF EXISTS "Allow All Access" ON "public"."orders";
-DROP POLICY IF EXISTS "Public Admin Access" ON "public"."products";
-DROP POLICY IF EXISTS "Public Admin Access" ON "public"."store_config";
-DROP POLICY IF EXISTS "Enable all for authenticated users" ON "public"."transactions";
-DROP POLICY IF EXISTS "Enable read access for all users" ON "public"."orders";
-DROP POLICY IF EXISTS "Enable Read for Realtime Orders" ON "public"."orders";
-DROP POLICY IF EXISTS "Enable Read for Realtime Products" ON "public"."products";
-DROP POLICY IF EXISTS "Products are viewable by everyone" ON "public"."products";
-DROP POLICY IF EXISTS "Enable Read for Realtime Config" ON "public"."store_config";
-DROP POLICY IF EXISTS "Public Admin Access" ON "public"."categories";
-DROP POLICY IF EXISTS "Enable read/write for all" ON "public"."transactions";
-
--- 3. Helper Function for Admin Check
+-- 2. FUNÇÃO AUXILIAR
 CREATE OR REPLACE FUNCTION public.is_admin()
 RETURNS boolean AS $$
 BEGIN
@@ -39,49 +26,50 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
--- 4. Public Read Policies (Static Content)
-CREATE POLICY "Public Read Access" ON "public"."categories" FOR SELECT USING (true);
-CREATE POLICY "Public Read Access" ON "public"."products" FOR SELECT USING (true);
-CREATE POLICY "Public Read Access" ON "public"."product_extras" FOR SELECT USING (true);
-CREATE POLICY "Public Read Access" ON "public"."store_config" FOR SELECT USING (true);
-CREATE POLICY "Public Read Access" ON "public"."opening_hours" FOR SELECT USING (true);
-CREATE POLICY "Public Read Access" ON "public"."delivery_fees" FOR SELECT USING (true);
-CREATE POLICY "Public Read Access" ON "public"."rewards" FOR SELECT USING (true);
-CREATE POLICY "Public Read Access" ON "public"."extras_groups" FOR SELECT USING (true);
-CREATE POLICY "Public Read Access" ON "public"."extras_options" FOR SELECT USING (true);
+-- 3. TABELAS PADRÃO (Comando Único)
+DO $$
+DECLARE
+    tbl_name TEXT;
+    target_tables TEXT[] := ARRAY['products', 'categories', 'coupons', 'delivery_fees', 'opening_hours', 'store_config', 'rewards', 'product_extras', 'extras_groups', 'extras_options', 'payments', 'admin_users'];
+BEGIN
+    FOREACH tbl_name IN ARRAY target_tables
+    LOOP
+        EXECUTE format('CREATE POLICY "Select %s" ON public.%I FOR SELECT USING (true)', tbl_name, tbl_name);
+        EXECUTE format('CREATE POLICY "Insert %s" ON public.%I FOR INSERT WITH CHECK (public.is_admin())', tbl_name, tbl_name);
+        EXECUTE format('CREATE POLICY "Update %s" ON public.%I FOR UPDATE USING (public.is_admin())', tbl_name, tbl_name);
+        EXECUTE format('CREATE POLICY "Delete %s" ON public.%I FOR DELETE USING (public.is_admin())', tbl_name, tbl_name);
+    END LOOP;
+END $$;
 
--- 5. Orders Policies
-CREATE POLICY "Public Insert Orders" ON "public"."orders" FOR INSERT WITH CHECK (
-  phone IS NOT NULL AND items IS NOT NULL AND total > 0 AND length(phone) >= 8
+-- 4. TRANSAÇÕES
+CREATE POLICY "Select transactions" ON public.transactions FOR SELECT USING (public.is_admin());
+CREATE POLICY "Insert transactions" ON public.transactions FOR INSERT WITH CHECK (public.is_admin());
+CREATE POLICY "Update transactions" ON public.transactions FOR UPDATE USING (public.is_admin());
+CREATE POLICY "Delete transactions" ON public.transactions FOR DELETE USING (public.is_admin());
+
+-- 5. GESTÃO DE ACESSO
+CREATE POLICY "Select admin_access_requests" ON public.admin_access_requests FOR SELECT USING (public.is_admin());
+CREATE POLICY "Insert admin_access_requests" ON public.admin_access_requests FOR INSERT WITH CHECK (
+    public.is_admin() OR (email ~* ''^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'' AND name IS NOT NULL AND length(name) > 1)
 );
-CREATE POLICY "Public Read Own Orders" ON "public"."orders" FOR SELECT USING (
-  created_at > (now() - interval '90 days') AND phone IS NOT NULL
-); -- Note: Public access restricted to recent orders with phone
+CREATE POLICY "Update admin_access_requests" ON public.admin_access_requests FOR UPDATE USING (public.is_admin());
+CREATE POLICY "Delete admin_access_requests" ON public.admin_access_requests FOR DELETE USING (public.is_admin());
 
--- 6. Customers & Coupons Policies
-CREATE POLICY "Public Insert Customers" ON "public"."customers" FOR INSERT WITH CHECK (
-  phone IS NOT NULL AND name IS NOT NULL AND length(phone) >= 8
-);
-CREATE POLICY "Public Update Customers" ON "public"."customers" FOR UPDATE USING (
-  phone IS NOT NULL AND name IS NOT NULL
-);
-CREATE POLICY "Public Read Own Coupons" ON "public"."coupons" FOR SELECT USING (true);
+-- 6. DADOS DE CLIENTES E PEDIDOS
+-- customers
+CREATE POLICY "Select customers" ON public.customers FOR SELECT USING (public.is_admin());
+CREATE POLICY "Insert customers" ON public.customers FOR INSERT WITH CHECK (phone IS NOT NULL AND length(phone) >= 8);
+CREATE POLICY "Update customers" ON public.customers FOR UPDATE USING (phone IS NOT NULL OR public.is_admin());
+CREATE POLICY "Delete customers" ON public.customers FOR DELETE USING (public.is_admin());
 
--- 7. Transactions (Admin Only)
-CREATE POLICY "Admin All Access Transactions" ON "public"."transactions" FOR ALL USING (public.is_admin());
+-- orders
+CREATE POLICY "Select orders" ON public.orders FOR SELECT USING (public.is_admin() OR (created_at > (now() - interval ''90 days'') AND phone IS NOT NULL));
+CREATE POLICY "Insert orders" ON public.orders FOR INSERT WITH CHECK (phone IS NOT NULL AND total > 0);
+CREATE POLICY "Update orders" ON public.orders FOR UPDATE USING (public.is_admin());
+CREATE POLICY "Delete orders" ON public.orders FOR DELETE USING (public.is_admin());
 
--- 8. Admin Full Access to Management Tables
-CREATE POLICY "Admin Full Access Categories" ON "public"."categories" FOR ALL USING (public.is_admin());
-CREATE POLICY "Admin Full Access Products" ON "public"."products" FOR ALL USING (public.is_admin());
-CREATE POLICY "Admin Full Access Product Extras" ON "public"."product_extras" FOR ALL USING (public.is_admin());
-CREATE POLICY "Admin Full Access Store Config" ON "public"."store_config" FOR ALL USING (public.is_admin());
-CREATE POLICY "Admin Full Access Opening Hours" ON "public"."opening_hours" FOR ALL USING (public.is_admin());
-CREATE POLICY "Admin Full Access Delivery Fees" ON "public"."delivery_fees" FOR ALL USING (public.is_admin());
-CREATE POLICY "Admin Full Access Rewards" ON "public"."rewards" FOR ALL USING (public.is_admin());
-CREATE POLICY "Admin Full Access Extras Groups" ON "public"."extras_groups" FOR ALL USING (public.is_admin());
-CREATE POLICY "Admin Full Access Extras Options" ON "public"."extras_options" FOR ALL USING (public.is_admin());
-CREATE POLICY "Admin Full Access Orders" ON "public"."orders" FOR ALL USING (public.is_admin());
-CREATE POLICY "Admin Full Access Customers" ON "public"."customers" FOR ALL USING (public.is_admin());
-CREATE POLICY "Admin Full Access Coupons" ON "public"."coupons" FOR ALL USING (public.is_admin());
-CREATE POLICY "Admin Full Access Profiles" ON "public"."profiles" FOR ALL USING (public.is_admin());
-CREATE POLICY "Admin Full Access Admin Users" ON "public"."admin_users" FOR ALL USING (public.is_admin());
+-- 7. PERFIS
+CREATE POLICY "Select profiles" ON public.profiles FOR SELECT USING (true);
+CREATE POLICY "Insert profiles" ON public.profiles FOR INSERT WITH CHECK ((id = (SELECT auth.uid())) OR public.is_admin());
+CREATE POLICY "Update profiles" ON public.profiles FOR UPDATE USING ((id = (SELECT auth.uid())) OR public.is_admin());
+CREATE POLICY "Delete profiles" ON public.profiles FOR DELETE USING (public.is_admin());
