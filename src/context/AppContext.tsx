@@ -629,14 +629,43 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // CRUD & Cart Logic (Restored full set)
   const addToCart = useCallback((product: Product, quantity: number = 1, extras: any[] = [], observation: string = '') => {
-    setCart(prev => [...prev, { ...product, quantity, extras, observation, cartId: Math.random().toString(36).substr(2, 9) }]);
+    setCart(prev => {
+      // If it has extras or observation, treat as a unique/new customized item
+      if (extras.length > 0 || observation) {
+        if (quantity <= 0) return prev;
+        return [...prev, { ...product, quantity, extras, observation, cartId: Math.random().toString(36).substr(2, 9) }];
+      }
+
+      // Simple item: try to find an existing simple item of the same product to merge
+      const idx = prev.findIndex(item => item.id === product.id && (!item.extras || item.extras.length === 0) && !item.observation);
+
+      if (idx !== -1) {
+        const newCart = [...prev];
+        const newQty = newCart[idx].quantity + quantity;
+        if (newQty <= 0) return newCart.filter((_, i) => i !== idx);
+        newCart[idx] = { ...newCart[idx], quantity: newQty };
+        return newCart;
+      }
+
+      if (quantity <= 0) return prev;
+      return [...prev, { ...product, quantity, extras, observation, cartId: Math.random().toString(36).substr(2, 9) }];
+    });
   }, []);
   const removeFromCart = useCallback((cartId: string) => setCart(p => p.filter(i => i.cartId !== cartId)), []);
   const clearCart = useCallback(() => setCart([]), []);
 
   return (
     <AppContext.Provider value={{
-      products, setProducts, orders, setOrders, cart, addToCart, removeFromCart, updateCartQuantity: (id, d) => setCart(p => p.map(i => i.cartId === id ? { ...i, quantity: Math.max(1, i.quantity + d) } : i)), updateCartItem: (id, u) => setCart(p => p.map(i => i.cartId === id ? { ...i, ...u } : i)), clearCart,
+      products, setProducts, orders, setOrders, cart, addToCart, removeFromCart,
+      updateCartQuantity: (id, d) => setCart(p => {
+        const item = p.find(i => i.cartId === id);
+        if (!item) return p;
+        const newQty = item.quantity + d;
+        if (newQty <= 0) return p.filter(i => i.cartId !== id);
+        return p.map(i => i.cartId === id ? { ...i, quantity: newQty } : i);
+      }),
+      updateCartItem: (id, u) => setCart(p => p.map(i => i.cartId === id ? { ...i, ...u } : i)),
+      clearCart,
       view, setView, customers, fetchCustomers, audioUnlocked,
       updateCustomerPoints: async (id, points) => { await supabase.from('customers').update({ points }).eq('id', id); fetchCustomers(); },
       customerProfile: (customers.find(c => c.phone === customerProfile?.phone))
