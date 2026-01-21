@@ -34,6 +34,7 @@ export const AdminManualOrder: React.FC<AdminManualOrderProps> = ({ onBack, onSu
     const [changeAmount, setChangeAmount] = useState('');
     const [orderObservation, setOrderObservation] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showErrors, setShowErrors] = useState(false);
 
     // Filter Products
     const filteredProducts = useMemo(() => {
@@ -109,11 +110,13 @@ export const AdminManualOrder: React.FC<AdminManualOrderProps> = ({ onBack, onSu
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (cart.length === 0) return alert('Adicione produtos ao carrinho');
-        if (!customerName || !customerPhone) return alert('Preencha os dados do cliente');
-        if (deliveryMethod === 'DELIVERY' && !address) return alert('Preencha o endereço de entrega');
+        if (cart.length === 0 || !customerName || !customerPhone || (deliveryMethod === 'DELIVERY' && (!address || !selectedNeighborhoodId))) {
+            setShowErrors(true);
+            return;
+        }
 
         setIsSubmitting(true);
+        setShowErrors(false);
 
         try {
             let finalAddress = deliveryMethod === 'DELIVERY' ? address : 'Retirada no Balcão';
@@ -275,11 +278,12 @@ export const AdminManualOrder: React.FC<AdminManualOrderProps> = ({ onBack, onSu
                         </div>
 
                         {/* Cart Items List */}
-                        <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar mb-6 max-h-[30vh]">
+                        <div className={`flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar mb-6 max-h-[30vh] ${showErrors && cart.length === 0 ? 'border-2 border-red-500/50 rounded-2xl p-2 bg-red-500/5' : ''}`}>
                             {cart.length === 0 ? (
                                 <div className="h-40 flex flex-col items-center justify-center text-slate-600 border-2 border-dashed border-slate-800 rounded-xl">
-                                    <ShoppingBag size={32} className="mb-2 opacity-50" />
-                                    <p className="text-sm font-medium">Carrinho vazio</p>
+                                    <ShoppingBag size={32} className={`mb-2 ${showErrors ? 'text-red-500' : 'opacity-50'}`} />
+                                    <p className={`text-sm font-medium ${showErrors ? 'text-red-400' : ''}`}>Carrinho vazio</p>
+                                    {showErrors && <p className="text-[10px] text-red-500 font-bold uppercase mt-2">Adicione pelo menos um item</p>}
                                 </div>
                             ) : (
                                 cart.map((item, idx) => (
@@ -311,25 +315,31 @@ export const AdminManualOrder: React.FC<AdminManualOrderProps> = ({ onBack, onSu
                             <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3">Dados do Cliente</h3>
 
                             <div className="grid grid-cols-1 gap-3">
-                                <div className="bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 flex items-center gap-3 focus-within:ring-2 ring-blue-500/30 transition-all">
-                                    <User size={18} className="text-slate-500" />
-                                    <input
-                                        type="text"
-                                        placeholder="Nome do Cliente"
-                                        value={customerName}
-                                        onChange={e => setCustomerName(e.target.value)}
-                                        className="bg-transparent border-none outline-none text-sm text-white w-full placeholder:text-slate-600 font-medium"
-                                    />
+                                <div className="space-y-1">
+                                    <div className={`bg-slate-900 border ${showErrors && !customerName ? 'border-red-500 ring-4 ring-red-500/10' : 'border-slate-800'} rounded-xl px-4 py-3 flex items-center gap-3 focus-within:ring-2 ring-blue-500/30 transition-all`}>
+                                        <User size={18} className={showErrors && !customerName ? 'text-red-400' : 'text-slate-500'} />
+                                        <input
+                                            type="text"
+                                            placeholder="Nome do Cliente"
+                                            value={customerName}
+                                            onChange={e => setCustomerName(e.target.value)}
+                                            className="bg-transparent border-none outline-none text-sm text-white w-full placeholder:text-slate-600 font-medium"
+                                        />
+                                    </div>
+                                    {showErrors && !customerName && <p className="text-[10px] text-red-500 font-bold uppercase ml-1">Nome é obrigatório</p>}
                                 </div>
-                                <div className="bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 flex items-center gap-3 focus-within:ring-2 ring-blue-500/30 transition-all">
-                                    <Phone size={18} className="text-slate-500" />
-                                    <input
-                                        type="text"
-                                        placeholder="Telefone"
-                                        value={customerPhone}
-                                        onChange={e => setCustomerPhone(e.target.value)}
-                                        className="bg-transparent border-none outline-none text-sm text-white w-full placeholder:text-slate-600 font-medium"
-                                    />
+                                <div className="space-y-1">
+                                    <div className={`bg-slate-900 border ${showErrors && !customerPhone ? 'border-red-500 ring-4 ring-red-500/10' : 'border-slate-800'} rounded-xl px-4 py-3 flex items-center gap-3 focus-within:ring-2 ring-blue-500/30 transition-all`}>
+                                        <Phone size={18} className={showErrors && !customerPhone ? 'text-red-400' : 'text-slate-500'} />
+                                        <input
+                                            type="text"
+                                            placeholder="Telefone"
+                                            value={customerPhone}
+                                            onChange={e => setCustomerPhone(e.target.value)}
+                                            className="bg-transparent border-none outline-none text-sm text-white w-full placeholder:text-slate-600 font-medium"
+                                        />
+                                    </div>
+                                    {showErrors && !customerPhone && <p className="text-[10px] text-red-500 font-bold uppercase ml-1">Telefone é obrigatório</p>}
                                 </div>
                             </div>
 
@@ -350,34 +360,40 @@ export const AdminManualOrder: React.FC<AdminManualOrderProps> = ({ onBack, onSu
 
                             {deliveryMethod === 'DELIVERY' && (
                                 <div className="space-y-3 animate-in slide-in-from-top-2 duration-300">
-                                    <div className="bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 focus-within:ring-2 ring-blue-500/30 transition-all">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <MapPin size={14} className="text-slate-500" />
-                                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Endereço Completo</label>
+                                    <div className="space-y-1">
+                                        <div className={`bg-slate-900 border ${showErrors && !address ? 'border-red-500 ring-4 ring-red-500/10' : 'border-slate-800'} rounded-xl px-4 py-3 focus-within:ring-2 ring-blue-500/30 transition-all`}>
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <MapPin size={14} className={showErrors && !address ? 'text-red-400' : 'text-slate-500'} />
+                                                <label className={`text-[10px] font-bold ${showErrors && !address ? 'text-red-400' : 'text-slate-500'} uppercase tracking-wider`}>Endereço Completo</label>
+                                            </div>
+                                            <textarea
+                                                placeholder="Rua, número, complemento e bairro..."
+                                                value={address}
+                                                onChange={e => setAddress(e.target.value)}
+                                                className="bg-transparent border-none outline-none text-sm text-white w-full placeholder:text-slate-600 resize-none h-16 leading-relaxed font-medium"
+                                            />
                                         </div>
-                                        <textarea
-                                            placeholder="Rua, número, complemento e bairro..."
-                                            value={address}
-                                            onChange={e => setAddress(e.target.value)}
-                                            className="bg-transparent border-none outline-none text-sm text-white w-full placeholder:text-slate-600 resize-none h-16 leading-relaxed font-medium"
-                                        />
+                                        {showErrors && !address && <p className="text-[10px] text-red-500 font-bold uppercase ml-1">Endereço é obrigatório</p>}
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-3">
-                                        <div className="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2">
-                                            <p className="text-[9px] text-slate-500 font-bold uppercase mb-1 ml-1">Bairro Ref.</p>
-                                            <select
-                                                value={selectedNeighborhoodId}
-                                                onChange={e => setSelectedNeighborhoodId(e.target.value)}
-                                                className="w-full bg-transparent text-xs text-white outline-none border-none font-bold cursor-pointer"
-                                            >
-                                                <option value="" className="bg-slate-900">Selecione...</option>
-                                                {deliveryFees.map(fee => (
-                                                    <option key={fee.id} value={fee.id} className="bg-slate-900">
-                                                        {fee.neighborhood}
-                                                    </option>
-                                                ))}
-                                            </select>
+                                        <div className="space-y-1">
+                                            <div className={`bg-slate-900 border ${showErrors && !selectedNeighborhoodId ? 'border-red-500 ring-4 ring-red-500/10' : 'border-slate-800'} rounded-xl px-3 py-2 text-balance`}>
+                                                <p className={`text-[9px] ${showErrors && !selectedNeighborhoodId ? 'text-red-400' : 'text-slate-500'} font-bold uppercase mb-1 ml-1`}>Bairro Ref.</p>
+                                                <select
+                                                    value={selectedNeighborhoodId}
+                                                    onChange={e => setSelectedNeighborhoodId(e.target.value)}
+                                                    className="w-full bg-transparent text-xs text-white outline-none border-none font-bold cursor-pointer"
+                                                >
+                                                    <option value="" className="bg-slate-900">Selecione...</option>
+                                                    {deliveryFees.map(fee => (
+                                                        <option key={fee.id} value={fee.id} className="bg-slate-900">
+                                                            {fee.neighborhood}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            {showErrors && !selectedNeighborhoodId && <p className="text-[9px] text-red-500 font-black uppercase ml-1">Selecione o Bairro</p>}
                                         </div>
                                         <div className="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2">
                                             <p className="text-[9px] text-slate-500 font-bold uppercase mb-1 ml-1">Taxa Entrega</p>
