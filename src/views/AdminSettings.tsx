@@ -94,16 +94,28 @@ export const AdminSettings: React.FC = () => {
         setSavedHours(false);
         try {
             // Find modified hours and update them
+            // We normalize the strings to HH:mm for comparison since local state uses HH:mm
             const modifiedHours = localOpeningHours.filter(local => {
                 const db = dbOpeningHours.find(h => h.id === local.id);
-                return db && (db.open_time !== local.open_time || db.close_time !== local.close_time || db.is_closed !== local.is_closed);
+                if (!db) return false;
+
+                const localOpen = local.open_time?.substring(0, 5);
+                const localClose = local.close_time?.substring(0, 5);
+                const dbOpen = db.open_time?.substring(0, 5);
+                const dbClose = db.close_time?.substring(0, 5);
+
+                return dbOpen !== localOpen || dbClose !== localClose || db.is_closed !== local.is_closed;
             });
 
-            await Promise.all(modifiedHours.map(h => updateOpeningHour(h)));
+            if (modifiedHours.length > 0) {
+                await Promise.all(modifiedHours.map(h => updateOpeningHour(h)));
+            }
+
             setSavedHours(true);
             setTimeout(() => setSavedHours(false), 3000);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error saving hours:', error);
+            // Error is already alerted in AppContext.tsx, but we can log it here too
         } finally {
             setSavingHours(false);
         }

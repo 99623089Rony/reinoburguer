@@ -703,6 +703,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const { error } = await supabase.from('store_config').update(mapped).eq('id', storeConfig?.id);
         if (error) {
           console.error('❌ Error updating storeConfig:', error);
+          alert('Erro ao salvar as configurações. Por favor, tente novamente.');
+          throw error;
         } else {
           console.log('✅ storeConfig updated successfully');
           setStoreConfig(p => p ? { ...p, ...c } : null);
@@ -715,7 +717,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updateExtraOption: async (id, n, p, mq = 1) => { await supabase.from('extras_options').update({ name: n, price: p, max_quantity: mq }).eq('id', id); fetchExtrasGroups(); },
       deleteExtraOption: async (id) => { await supabase.from('extras_options').delete().eq('id', id); fetchExtrasGroups(); },
       productExtras, toggleProductExtra: async (pi, gi, s) => { if (s) await supabase.from('product_extras').insert([{ product_id: pi, group_id: gi }]); else await supabase.from('product_extras').delete().match({ product_id: pi, group_id: gi }); fetchProductExtras(); },
-      setOpeningHours, openingHours, updateOpeningHour: async (h) => { await supabase.from('opening_hours').update({ open_time: h.open_time, close_time: h.close_time, is_closed: h.is_closed }).eq('id', h.id); fetchOpeningHours(); },
+      setOpeningHours, openingHours, updateOpeningHour: async (h) => {
+        const { error } = await supabase.from('opening_hours').update({ open_time: h.open_time, close_time: h.close_time, is_closed: h.is_closed }).eq('id', h.id);
+        if (error) {
+          console.error('❌ Error updating opening hour:', error);
+          alert(`Erro ao atualizar horário: ${error.message}`);
+          throw error;
+        }
+        fetchOpeningHours();
+      },
       deliveryFees, addDeliveryFee: async (n, f) => { await supabase.from('delivery_fees').insert([{ neighborhood: n, fee: f }]); fetchDeliveryFees(); },
       updateDeliveryFee: async (f) => { await supabase.from('delivery_fees').update({ neighborhood: f.neighborhood, fee: f.fee, is_active: f.is_active }).eq('id', f.id); fetchDeliveryFees(); },
       deleteDeliveryFee: async (id) => { await supabase.from('delivery_fees').delete().eq('id', id); fetchDeliveryFees(); },
