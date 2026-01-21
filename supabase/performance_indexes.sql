@@ -7,6 +7,8 @@ CREATE INDEX IF NOT EXISTS idx_coupons_reward_id ON public.coupons(reward_id);
 CREATE INDEX IF NOT EXISTS idx_extras_options_group_id ON public.extras_options(group_id);
 CREATE INDEX IF NOT EXISTS idx_store_config_ranking_prize_id ON public.store_config(ranking_prize_id);
 CREATE INDEX IF NOT EXISTS idx_transactions_order_id ON public.transactions(order_id);
+CREATE INDEX IF NOT EXISTS idx_orders_user_id ON public.orders(user_id);
+CREATE INDEX IF NOT EXISTS idx_product_extras_group_id ON public.product_extras(group_id);
 
 -- 2. Remoção de Índices Não Utilizados (Acelera a criação de novos pedidos)
 DROP INDEX IF EXISTS idx_payments_mp_id;
