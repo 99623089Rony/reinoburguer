@@ -321,7 +321,7 @@ const OrderEditModal: React.FC<{
 type OrderEditModalType = typeof OrderEditModal; // For internal reference if needed
 
 
-export const AdminOrders: React.FC = () => {
+export const AdminOrders: React.FC<{ onAddOrder?: () => void }> = ({ onAddOrder }) => {
   const { orders, updateOrderStatus, updateOrder, deleteOrder, storeConfig } = useApp();
   const [filter, setFilter] = useState<OrderStatus | 'Todos'>('Todos');
   const [dateFilter, setDateFilter] = useState<DateFilterType>('today');
@@ -610,6 +610,13 @@ export const AdminOrders: React.FC = () => {
         {/* Status Filter and Search Row */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-4 overflow-x-auto pb-2 md:pb-0 no-scrollbar">
+            <button
+              onClick={onAddOrder}
+              className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-black flex items-center gap-2 shadow-lg shadow-blue-900/40 transition-all active:scale-95 shrink-0"
+            >
+              <Plus size={18} /> Novo Pedido
+            </button>
+            <div className="w-px h-8 bg-slate-800 shrink-0 mx-2 hidden md:block"></div>
             {['Todos', ...Object.values(OrderStatus)].map(s => (
               <button
                 key={s}

@@ -122,11 +122,14 @@ const ViewManager: React.FC = () => {
     return <Login onLoginSuccess={() => { }} onRegisterClick={() => setIsRegistering(true)} />;
   }
 
+  if (view === 'admin' && adminTab === 'manual_order') {
+    return <AdminManualOrder onBack={() => setAdminTab('orders')} onSuccess={() => setAdminTab('orders')} />;
+  }
+
   return (
     <AdminLayout activeTab={adminTab} onTabChange={setAdminTab}>
 
-      {adminTab === 'orders' && <AdminOrders />}
-      {adminTab === 'manual_order' && <AdminManualOrder onBack={() => setAdminTab('orders')} onSuccess={() => setAdminTab('orders')} />}
+      {adminTab === 'orders' && <AdminOrders onAddOrder={() => setAdminTab('manual_order')} />}
       {adminTab === 'reports' && <AdminReports />}
       {adminTab === 'stock' && <AdminMenu />}
       {adminTab === 'loyalty' && <AdminLoyalty />}

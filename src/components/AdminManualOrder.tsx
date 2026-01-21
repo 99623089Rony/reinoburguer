@@ -178,23 +178,37 @@ export const AdminManualOrder: React.FC<AdminManualOrderProps> = ({ onBack, onSu
     };
 
     return (
-        <div className="w-full h-[calc(100vh-160px)] min-h-[600px] animate-in fade-in duration-300">
-            <div className="bg-slate-900 border border-slate-800 w-full h-full rounded-3xl flex flex-col md:flex-row overflow-hidden shadow-2xl">
+        <div className="fixed inset-0 z-[100] bg-slate-950 flex flex-col animate-in fade-in duration-300">
+            {/* Full Screen Header */}
+            <div className="h-20 border-b border-slate-800 bg-slate-900/50 flex items-center justify-between px-8 backdrop-blur-md">
+                <div className="flex items-center gap-4">
+                    <button onClick={onBack} className="p-3 bg-slate-800 hover:bg-slate-700 rounded-2xl text-slate-400 transition-all group">
+                        <ArrowLeft size={24} className="group-hover:-translate-x-1 transition-transform" />
+                    </button>
+                    <div>
+                        <h2 className="text-2xl font-black text-white flex items-center gap-2">
+                            Novo Pedido
+                        </h2>
+                        <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Registro de Pedido Manual</p>
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-4">
+                    <div className="hidden md:flex flex-col items-end mr-4">
+                        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em]">Total Parcial</span>
+                        <span className="text-2xl font-black text-emerald-400">R$ {total.toFixed(2).replace('.', ',')}</span>
+                    </div>
+                    <button onClick={onBack} className="p-3 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-2xl transition-all">
+                        <X size={24} />
+                    </button>
+                </div>
+            </div>
+
+            <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
 
                 {/* Left Side - Product Selection */}
                 <div className={`flex-1 flex flex-col border-r border-slate-800 ${step === 2 ? 'hidden md:flex' : 'flex'}`}>
                     <div className="p-6 border-b border-slate-800 bg-slate-900 sticky top-0 z-10">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-xl font-black text-white flex items-center gap-2">
-                                <Store className="text-orange-500" /> Novo Pedido
-                            </h2>
-                            {onBack && (
-                                <button onClick={onBack} className="md:hidden p-2 bg-slate-800 rounded-full text-slate-400">
-                                    <ArrowLeft size={20} />
-                                </button>
-                            )}
-                        </div>
-
                         <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar mb-3">
                             {categories.map(cat => (
                                 <button
@@ -246,16 +260,16 @@ export const AdminManualOrder: React.FC<AdminManualOrderProps> = ({ onBack, onSu
                 </div>
 
                 {/* Right Side - Cart & Details */}
-                <div className={`w-full md:w-[400px] flex flex-col bg-slate-950 ${step === 1 ? 'hidden md:flex' : 'flex'}`}>
+                <div className={`w-full md:w-[600px] flex flex-col bg-slate-950 border-l border-slate-800 ${step === 1 ? 'hidden md:flex' : 'flex'}`}>
                     <div className="p-6 flex-1 flex flex-col overflow-hidden">
 
                         <div className="flex items-center justify-between mb-6">
-                            <h3 className="text-lg font-black text-white flex items-center gap-2">
+                            <h3 className="text-xl font-black text-white flex items-center gap-2 uppercase tracking-tight">
                                 <ShoppingBag className="text-blue-500" /> Carrinho ({cart.reduce((a, b) => a + b.quantity, 0)})
                             </h3>
                             {step === 2 && (
-                                <button onClick={() => setStep(1)} className="md:hidden p-2 text-slate-400">
-                                    <ArrowLeft size={20} />
+                                <button onClick={() => setStep(1)} className="md:hidden p-2 text-slate-400 flex items-center gap-2">
+                                    <ArrowLeft size={20} /> <span className="text-sm font-bold">Produtos</span>
                                 </button>
                             )}
                         </div>
