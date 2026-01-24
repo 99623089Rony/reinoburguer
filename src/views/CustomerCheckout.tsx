@@ -74,6 +74,14 @@ export const CustomerCheckout: React.FC<{
     setPhone(formatPhone(e.target.value));
   };
 
+  const normalizeString = (str: string) => {
+    return str
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // Remove accents
+      .replace(/[^a-z0-9]/g, ''); // Remove special characters
+  };
+
   // Helper to validate entire form step 1
   const validateForm = () => {
     // Name: Min 3 chars
@@ -195,20 +203,21 @@ export const CustomerCheckout: React.FC<{
 
     // Filter suggestions
     if (val.length > 0) {
+      const normalizedInput = normalizeString(val);
       const matches = deliveryFees.filter(df =>
-        df.is_active && df.neighborhood.toLowerCase().includes(val.toLowerCase())
+        df.is_active && normalizeString(df.neighborhood).includes(normalizedInput)
       );
       setSuggestions(matches);
       setShowSuggestions(true);
 
-      // Check for exact match to auto-set fee (optional UX)
-      const exact = matches.find(m => m.neighborhood.toLowerCase() === val.toLowerCase());
+      // Check for exact match (normalized)
+      const exact = matches.find(m => normalizeString(m.neighborhood) === normalizedInput);
       if (exact) {
         setSelectedFee(exact.fee);
         setIsCustomNeighborhood(false);
       } else {
         setSelectedFee(null);
-        setIsCustomNeighborhood(false); // DO NOT auto-set custom anymore
+        setIsCustomNeighborhood(false);
       }
     } else {
       setSuggestions([]);
@@ -815,20 +824,21 @@ export const CustomerCheckout: React.FC<{
             if (step === 1) {
               // Auto-select logic for neighborhood
               if (orderType === 'delivery' && !isCustomNeighborhood && selectedFee === null && neighborhood.trim().length > 0) {
+                const normalizedInput = normalizeString(neighborhood);
                 const matches = deliveryFees.filter(df =>
-                  df.is_active && df.neighborhood.toLowerCase().includes(neighborhood.toLowerCase())
+                  df.is_active && normalizeString(df.neighborhood).includes(normalizedInput)
                 );
 
                 if (matches.length === 1) {
-                  // Only one match, select it automatically
+                  // Only one match (normalized), select it automatically
                   selectSuggestion(matches[0]);
                   setStep(2);
                   setShowErrors(false);
                   window.scrollTo(0, 0);
                   return;
                 } else if (matches.length > 1) {
-                  // Multiple matches, check if one is an EXACT match (ignoring case)
-                  const exact = matches.find(m => m.neighborhood.toLowerCase() === neighborhood.trim().toLowerCase());
+                  // Multiple matches, check if one is an EXACT match (normalized)
+                  const exact = matches.find(m => normalizeString(m.neighborhood) === normalizedInput);
                   if (exact) {
                     selectSuggestion(exact);
                     setStep(2);
