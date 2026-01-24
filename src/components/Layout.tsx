@@ -7,7 +7,7 @@ import { AdminMobileNav } from './AdminMobileNav';
 import { AdminHeader } from './AdminHeader';
 
 export const CustomerLayout: React.FC<{ children: React.ReactNode, activeTab: string, onTabChange: (t: string) => void }> = ({ children, activeTab, onTabChange }) => {
-  const { cart } = useApp();
+  const { cart, ordersBadgeCount } = useApp();
   const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
 
   return (
@@ -16,7 +16,7 @@ export const CustomerLayout: React.FC<{ children: React.ReactNode, activeTab: st
         {children}
       </main>
 
-      <CustomerBottomNav activeTab={activeTab} onTabChange={onTabChange} cartCount={cartCount} />
+      <CustomerBottomNav activeTab={activeTab} onTabChange={onTabChange} cartCount={cartCount} ordersBadgeCount={ordersBadgeCount} />
     </div>
   );
 };

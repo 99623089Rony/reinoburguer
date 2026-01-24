@@ -75,6 +75,7 @@ interface AppContextType {
   closePayment: () => void;
   loginCustomer: (phone: string) => Promise<boolean>;
   audioUnlocked: boolean; // Exposed to show UI warning
+  ordersBadgeCount: number;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -155,6 +156,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [myCoupons, setMyCoupons] = useState<CustomerCoupon[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [paymentData, setPaymentData] = useState<{ orderId: string; amount: number; createdAt: Date } | null>(null);
+  const [ordersBadgeCount, setOrdersBadgeCount] = useState(0);
 
   const openPayment = useCallback((orderId: string, amount: number, createdAt: Date) => {
     setPaymentData({ orderId, amount, createdAt });
@@ -454,6 +456,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     }
   }, [orders, audio, audioUnlocked, view]);
+
+  // Reset badge when entering orders tab
+  useEffect(() => {
+    if (customerTab === 'orders') {
+      setOrdersBadgeCount(0);
+    }
+  }, [customerTab]);
+
+  // Update badge when orders change
+  useEffect(() => {
+    if (customerTab !== 'orders' && view === 'customer') {
+      const activeOrders = orders.filter(o => o.status !== OrderStatus.FINISHED);
+
+      if (activeOrders.length > 0) {
+        setOrdersBadgeCount(activeOrders.length);
+      }
+    }
+  }, [orders, customerTab, view]);
 
   const syncCustomer = useCallback(async (order: Order) => {
     const { data: existing } = await supabase.from('customers').select('*').eq('phone', order.phone).maybeSingle();
@@ -844,7 +864,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       showCheckout, setShowCheckout,
       prefillCoupon, setPrefillCoupon,
       paymentData, openPayment, closePayment,
-      loginCustomer
+      loginCustomer,
+      ordersBadgeCount
     }}>
       {children}
     </AppContext.Provider>
