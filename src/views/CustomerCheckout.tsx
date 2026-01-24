@@ -201,18 +201,20 @@ export const CustomerCheckout: React.FC<{
       setSuggestions(matches);
       setShowSuggestions(true);
 
-      // Check for exact match to auto-set fee (optional UX, sticking to explicit selection usually better, but let's clear fee if typing custom)
+      // Check for exact match to auto-set fee (optional UX)
       const exact = matches.find(m => m.neighborhood.toLowerCase() === val.toLowerCase());
       if (exact) {
         setSelectedFee(exact.fee);
         setIsCustomNeighborhood(false);
       } else {
-        setSelectedFee(null); // Unknown / Custom
-        setIsCustomNeighborhood(true);
+        setSelectedFee(null);
+        setIsCustomNeighborhood(false); // DO NOT auto-set custom anymore
       }
     } else {
       setSuggestions([]);
       setShowSuggestions(false);
+      setSelectedFee(null);
+      setIsCustomNeighborhood(false);
     }
   };
 
@@ -506,21 +508,21 @@ export const CustomerCheckout: React.FC<{
                         }
                       }}
                       placeholder="Digite seu bairro..."
-                      className={`w-full bg-white border p-4 rounded-2xl shadow-sm outline-none transition-all placeholder:text-gray-300 ${showErrors && (!neighborhood)
+                      className={`w-full bg-white border p-4 rounded-2xl shadow-sm outline-none transition-all placeholder:text-gray-300 ${showErrors && (!neighborhood || (!isCustomNeighborhood && selectedFee === null))
                         ? 'border-red-500 focus:ring-2 focus:ring-red-500/20'
                         : 'border-gray-100 focus:ring-2 focus:ring-orange-500'
                         }`}
                       autoComplete="off"
                     />
-                    {showErrors && (!neighborhood) && (
+                    {showErrors && (!neighborhood || (!isCustomNeighborhood && selectedFee === null)) && (
                       <span className="text-[10px] text-red-500 ml-4 font-bold flex items-center gap-1 mt-1">
-                        Selecione ou digite o bairro
+                        Selecione um bairro da lista ou clique em "Outro"
                       </span>
                     )}
 
                     {/* Suggestions List */}
                     {showSuggestions && suggestions.length > 0 && (
-                      <div className="absolute z-50 top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-gray-100 max-h-60 overflow-y-auto animate-in slide-in-from-top-2 fade-in duration-200">
+                      <div className="absolute z-50 top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-gray-100 max-h-64 overflow-y-auto animate-in slide-in-from-top-2 fade-in duration-200">
                         {suggestions.map(s => (
                           <button
                             key={s.id}
@@ -533,6 +535,20 @@ export const CustomerCheckout: React.FC<{
                             </span>
                           </button>
                         ))}
+
+                        {/* Button for custom neighborhood */}
+                        <button
+                          onClick={() => {
+                            setIsCustomNeighborhood(true);
+                            setSelectedFee(0);
+                            setShowSuggestions(false);
+                            if (!neighborhood) setNeighborhood('Outro / Bairro não listado');
+                          }}
+                          className="w-full text-left px-4 py-4 bg-gray-50 hover:bg-orange-100 transition-colors flex flex-col gap-0.5"
+                        >
+                          <span className="font-black text-orange-600 text-[10px] uppercase tracking-widest">Não encontrou seu bairro?</span>
+                          <span className="font-bold text-slate-700 text-sm">Outro / Bairro não listado</span>
+                        </button>
                       </div>
                     )}
 
