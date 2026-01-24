@@ -813,9 +813,36 @@ export const CustomerCheckout: React.FC<{
         <button
           onClick={() => {
             if (step === 1) {
+              // Auto-select logic for neighborhood
+              if (orderType === 'delivery' && !isCustomNeighborhood && selectedFee === null && neighborhood.trim().length > 0) {
+                const matches = deliveryFees.filter(df =>
+                  df.is_active && df.neighborhood.toLowerCase().includes(neighborhood.toLowerCase())
+                );
+
+                if (matches.length === 1) {
+                  // Only one match, select it automatically
+                  selectSuggestion(matches[0]);
+                  setStep(2);
+                  setShowErrors(false);
+                  window.scrollTo(0, 0);
+                  return;
+                } else if (matches.length > 1) {
+                  // Multiple matches, check if one is an EXACT match (ignoring case)
+                  const exact = matches.find(m => m.neighborhood.toLowerCase() === neighborhood.trim().toLowerCase());
+                  if (exact) {
+                    selectSuggestion(exact);
+                    setStep(2);
+                    setShowErrors(false);
+                    window.scrollTo(0, 0);
+                    return;
+                  }
+                }
+              }
+
               if (validateForm()) {
                 setStep(2);
                 setShowErrors(false);
+                window.scrollTo(0, 0);
               } else {
                 setShowErrors(true);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
