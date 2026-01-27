@@ -48,7 +48,7 @@ serve(async (req) => {
         // 1. Get Store Config
         const { data: storeConfig, error: storeError } = await supabase
             .from("store_config")
-            .select("waha_url, waha_session, waha_api_key, is_active")
+            .select("waha_url, waha_session, waha_api_key")
             .maybeSingle();
 
         if (storeError) {
