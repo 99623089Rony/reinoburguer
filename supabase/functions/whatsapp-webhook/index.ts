@@ -40,7 +40,30 @@ serve(async (req) => {
 
         // 0. Handle Ping (Testing)
         if (body.event === "ping") {
-            return new Response(JSON.stringify({ pong: true, timestamp: new Date().toISOString() }), {
+            // Get Store Config for health check
+            const { data: storeConfig } = await supabase
+                .from("store_config")
+                .select("waha_url")
+                .maybeSingle();
+
+            let wahaHealth = "unknown";
+            if (storeConfig?.waha_url) {
+                try {
+                    const healthRes = await fetch(`${storeConfig.waha_url}/api/version`, {
+                        method: "GET",
+                        signal: AbortSignal.timeout(5000)
+                    });
+                    wahaHealth = healthRes.ok ? "online" : `error_${healthRes.status}`;
+                } catch (e) {
+                    wahaHealth = `offline_${e.message}`;
+                }
+            }
+
+            return new Response(JSON.stringify({
+                pong: true,
+                timestamp: new Date().toISOString(),
+                waha_reachable: wahaHealth
+            }), {
                 headers: { ...corsHeaders, "Content-Type": "application/json" }
             });
         }

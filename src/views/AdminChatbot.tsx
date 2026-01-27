@@ -282,20 +282,20 @@ export default function AdminChatbot() {
     };
 
     const checkBridge = async () => {
-        console.log('Testing Bridge Ping...');
+        console.log('Testing Bridge Health...');
         try {
             const { data, error } = await supabase.functions.invoke('whatsapp-webhook', {
                 body: { event: 'ping' }
             });
             if (error) {
-                console.error('Bridge Ping Failed:', error);
-                return false;
+                console.error('Bridge Health Check Failed:', error);
+                return { ok: false };
             }
-            console.log('Bridge Ping OK:', data);
-            return true;
+            console.log('Bridge Health OK:', data);
+            return { ok: true, waha: data.waha_reachable };
         } catch (err) {
             console.error('Bridge connection crash:', err);
-            return false;
+            return { ok: false };
         }
     };
 
@@ -303,13 +303,17 @@ export default function AdminChatbot() {
         if (!storeId) return;
 
         try {
-            // First time or every 5 checks, test the bridge itself
-            if (Math.random() > 0.8) {
-                const bridgeOk = await checkBridge();
-                if (!bridgeOk) {
-                    setWahaConfig(prev => ({ ...prev, status: 'BRIDGE_OFFLINE' }));
-                    return;
-                }
+            // Check bridge health
+            const bridgeHealth = await checkBridge();
+            if (!bridgeHealth.ok) {
+                setWahaConfig(prev => ({ ...prev, status: 'BRIDGE_OFFLINE' }));
+                return;
+            }
+
+            if (bridgeHealth.waha !== 'online') {
+                console.warn('WAHA Engine is unreachable via bridge:', bridgeHealth.waha);
+                setWahaConfig(prev => ({ ...prev, status: 'OFFLINE' }));
+                return;
             }
 
             const data = await callWahaProxy('GET', `/api/sessions/${wahaConfig.session}`);
@@ -900,9 +904,10 @@ export default function AdminChatbot() {
                                             <div>
                                                 <h3 className="text-lg font-black text-white">
                                                     Status: {
-                                                        wahaConfig.status === 'OFFLINE' ? 'Servidor Offline' :
-                                                            wahaConfig.status === 'UNAUTHORIZED' ? 'Chave API Incorreta' :
-                                                                'Aguardando QR Code'
+                                                        wahaConfig.status === 'OFFLINE' ? 'Servidor WAHA Offline (Koyeb)' :
+                                                            wahaConfig.status === 'BRIDGE_OFFLINE' ? 'Ponte Supabase Desconectada' :
+                                                                wahaConfig.status === 'UNAUTHORIZED' ? 'Chave API Incorreta' :
+                                                                    'Aguardando QR Code'
                                                     }
                                                 </h3>
                                                 <p className="text-slate-500 text-sm mt-1 italic">
