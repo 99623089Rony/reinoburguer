@@ -370,6 +370,7 @@ export const CustomerCheckout: React.FC<{
         if (discount > 0) message += `Desconto ......... - R$ ${discount.toFixed(2).replace('.', ',')}\n`;
         if (cardDebitFee > 0) message += `Taxa Débito ...... R$ ${cardDebitFee.toFixed(2).replace('.', ',')}\n`;
         if (cardCreditFee > 0) message += `Taxa Crédito ..... R$ ${cardCreditFee.toFixed(2).replace('.', ',')}\n`;
+        if (pixFee > 0) message += `Taxa PIX ......... R$ ${pixFee.toFixed(2).replace('.', ',')}\n`;
         if (appliedCoupon?.reward) {
           message += `PRÊMIO DO DIA .... ${appliedCoupon.reward.title.toUpperCase()}\n`;
         }
@@ -615,7 +616,13 @@ export const CustomerCheckout: React.FC<{
                   <div className="flex justify-between items-center py-4 border-b border-slate-800/50">
                     <span className="text-slate-400 text-sm font-black uppercase tracking-tight flex items-center gap-2">
                       <div className="w-1.5 h-1.5 rounded-full bg-orange-500" />
-                      {pixFee > 0 ? 'Taxa PIX' : 'Taxa Maquininha'}
+                      {(() => {
+                        const method = paymentMethod?.toLowerCase() || '';
+                        if (method.includes('pix')) return 'Taxa PIX';
+                        if (method.includes('crédito')) return 'Taxa Crédito';
+                        if (method.includes('débito')) return 'Taxa Débito';
+                        return 'Taxa Maquininha';
+                      })()}
                     </span>
                     <span className="text-orange-500 font-black text-sm">+ R$ {(cardDebitFee + cardCreditFee + pixFee).toFixed(2).replace('.', ',')}</span>
                   </div>

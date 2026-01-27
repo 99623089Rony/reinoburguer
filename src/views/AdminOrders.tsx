@@ -557,7 +557,13 @@ export const AdminOrders: React.FC<{ onAddOrder?: () => void }> = ({ onAddOrder 
                     ) : null}
                     {selectedOrder.cardFee ? (
                       <p className="text-[10px] text-orange-500 font-bold">
-                        {selectedOrder.paymentMethod.toLowerCase().includes('pix') ? 'TAXA PIX' : 'TAXA MAQUININHA'}: + R$ {selectedOrder.cardFee.toFixed(2).replace('.', ',')}
+                        {(() => {
+                          const method = selectedOrder.paymentMethod.toLowerCase();
+                          if (method.includes('pix')) return 'TAXA PIX';
+                          if (method.includes('crédito')) return 'TAXA CRÉDITO';
+                          if (method.includes('débito')) return 'TAXA DÉBITO';
+                          return 'TAXA MAQUININHA';
+                        })()}: + R$ {selectedOrder.cardFee.toFixed(2).replace('.', ',')}
                       </p>
                     ) : null}
                     {!selectedOrder.deliveryFee && !selectedOrder.cardFee && totalFees > 0.05 && (
