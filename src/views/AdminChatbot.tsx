@@ -266,7 +266,7 @@ export default function AdminChatbot() {
 
     const callWahaProxy = async (method: string, path: string, payload?: any) => {
         console.log(`[Proxy] Requesting ${method} ${path}`);
-        const { data, error } = await supabase.functions.invoke('whatsapp-webhook', {
+        const { data, error } = await supabase.functions.invoke('whatsapp-webhook-v2', {
             body: {
                 event: 'proxy',
                 method,
@@ -285,7 +285,7 @@ export default function AdminChatbot() {
     const checkBridge = async () => {
         console.log('Testing Bridge Health...');
         try {
-            const { data, error } = await supabase.functions.invoke('whatsapp-webhook', {
+            const { data, error } = await supabase.functions.invoke('whatsapp-webhook-v2', {
                 body: { event: 'ping' }
             });
             if (error) {
@@ -380,6 +380,7 @@ export default function AdminChatbot() {
                 await callWahaProxy('POST', `/instance/create`, {
                     instanceName: wahaConfig.session,
                     token: wahaConfig.apiKey || 'brenda123',
+                    integration: 'WHATSAPP-BAILEYS',
                     qrcode: true
                 });
                 console.log('Instance created/verified');

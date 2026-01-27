@@ -13,7 +13,7 @@ services:
       - AUTHENTICATION_MANAGER_PASSWORD=admin
       - CORS_ORIGIN=*
       - WEBHOOK_GLOBAL_ENABLED=true
-      - WEBHOOK_GLOBAL_URL=https://saikxbildeupefudrrhl.supabase.co/functions/v1/whatsapp-webhook
+      - WEBHOOK_GLOBAL_URL=https://saikxbildeupefudrrhl.supabase.co/functions/v1/whatsapp-webhook-v2
       - WEBHOOK_EVENTS_MESSAGE_UPSERT=true
       - DATABASE_ENABLED=true
       - DATABASE_PROVIDER=postgresql
