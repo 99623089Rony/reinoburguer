@@ -405,32 +405,219 @@ export class ChatbotService {
      * Handle browsing menu (category selection)
      */
     private static async handleBrowsingMenu(conversation: ChatbotConversation, message: string): Promise<string> {
-        // Implementation for product browsing
-        return 'Funcionalidade em desenvolvimento...';
+        const option = parseInt(message.trim());
+
+        if (isNaN(option)) {
+            // Check if it's "voltar"
+            if (message.toLowerCase().includes('voltar')) {
+                await this.updateContext(conversation.id, { currentStep: 'main_menu' });
+                return this.getTemplate('welcome');
+            }
+            return 'Por favor, digite o número da categoria desejada ou *voltar* para o menu principal.';
+        }
+
+        // Get categories to find the selected one
+        const { data: categories } = await supabase
+            .from('categories')
+            .select('*')
+            .order('sort_order');
+
+        if (!categories || option < 1 || option > categories.length) {
+            return 'Opção inválida. Por favor, escolha uma categoria da lista.';
+        }
+
+        const category = categories[option - 1];
+
+        // Get products for this category
+        const { data: products } = await supabase
+            .from('products')
+            .select('*')
+            .eq('category', category.name)
+            .eq('in_stock', true)
+            .order('name');
+
+        if (!products || products.length === 0) {
+            return `Desculpe, não há produtos disponíveis na categoria *${category.name}* no momento.`;
+        }
+
+        await this.updateContext(conversation.id, {
+            currentStep: 'adding_to_cart',
+            tempData: { ...conversation.context.tempData, lastCategory: category.name, currentProducts: products }
+        });
+
+        let response = `🍔 *${category.name.toUpperCase()}*\n\n`;
+        products.forEach((p, index) => {
+            response += `${index + 1}️⃣ *${p.name}*\n`;
+            response += `   ${p.description || ''}\n`;
+            response += `   💰 R$ ${Number(p.price).toFixed(2).replace('.', ',')}\n\n`;
+        });
+        response += 'Digite o número do produto para adicionar ao carrinho ou *voltar*:';
+
+        return response;
     }
 
     /**
      * Handle adding items to cart
      */
     private static async handleAddToCart(conversation: ChatbotConversation, message: string): Promise<string> {
-        // Implementation for cart management
-        return 'Funcionalidade em desenvolvimento...';
+        const text = message.trim().toLowerCase();
+
+        if (text === 'voltar') {
+            await this.updateContext(conversation.id, { currentStep: 'browsing_menu' });
+            return await this.showCategories();
+        }
+
+        if (text === 'finalizar') {
+            const cart = conversation.context.cart || [];
+            if (cart.length === 0) return 'Seu carrinho está vazio! Escolha um produto primeiro.';
+
+            await this.updateContext(conversation.id, { currentStep: 'checkout_address' });
+            return 'Deseja que o pedido seja para *Entrega* ou *Retirada*?';
+        }
+
+        const option = parseInt(text);
+        const products = conversation.context.tempData?.currentProducts as Product[];
+
+        if (isNaN(option) || !products || option < 1 || option > products.length) {
+            return 'Opção inválida. Digite o número do produto, *finalizar* para concluir ou *voltar*.';
+        }
+
+        const product = products[option - 1];
+        const cart = conversation.context.cart || [];
+
+        // Corrected CartItem addition
+        const newItem: CartItem = {
+            ...product,
+            cartId: Math.random().toString(36).substr(2, 9),
+            quantity: 1,
+            extras: [],
+            observation: ''
+        };
+
+        cart.push(newItem);
+        await this.updateContext(conversation.id, { cart });
+
+        let response = `✅ *${product.name}* adicionado ao carrinho!\n\n`;
+        response += `🛒 *Seu Carrinho:*\n`;
+        let total = 0;
+        cart.forEach((item, i) => {
+            response += `${i + 1}. ${item.quantity}x ${item.name} - R$ ${(item.price * item.quantity).toFixed(2).replace('.', ',')}\n`;
+            total += item.price * item.quantity;
+        });
+        response += `\n*Total: R$ ${total.toFixed(2).replace('.', ',')}*\n\n`;
+        response += 'Digite o número de outro produto, *finalizar* para concluir o pedido ou *voltar* para categorias.';
+
+        return response;
     }
 
     /**
      * Handle checkout address input
      */
     private static async handleCheckoutAddress(conversation: ChatbotConversation, message: string): Promise<string> {
-        // Implementation for address handling
-        return 'Funcionalidade em desenvolvimento...';
+        const text = message.trim().toLowerCase();
+        const context = conversation.context;
+
+        if (!context.tempData?.deliveryMethod) {
+            if (text.includes('entrega')) {
+                await this.updateContext(conversation.id, {
+                    tempData: { ...context.tempData, deliveryMethod: 'entrega' }
+                });
+                return 'Por favor, informe seu *Endereço Completo* (Rua, Número, Bairro e Ponto de Referência):';
+            } else if (text.includes('retirada')) {
+                await this.updateContext(conversation.id, {
+                    tempData: { ...context.tempData, deliveryMethod: 'retirada', address: 'Retirada no Balcão' },
+                    currentStep: 'checkout_payment'
+                });
+                return 'Qual será a forma de pagamento?\n\n1️⃣ PIX\n2️⃣ Dinheiro (especifique o troco)\n3️⃣ Cartão (Deb/Cred)';
+            }
+            return 'Por favor, responda *Entrega* ou *Retirada*.';
+        }
+
+        // If we are here, we are waiting for the address string
+        await this.updateContext(conversation.id, {
+            tempData: { ...context.tempData, address: message.trim() },
+            currentStep: 'checkout_payment'
+        });
+
+        return 'Qual será a forma de pagamento?\n\n1️⃣ PIX\n2️⃣ Dinheiro (especifique o troco)\n3️⃣ Cartão (Deb/Cred)';
     }
 
     /**
      * Handle checkout payment selection
      */
     private static async handleCheckoutPayment(conversation: ChatbotConversation, message: string): Promise<string> {
-        // Implementation for payment handling
-        return 'Funcionalidade em desenvolvimento...';
+        const text = message.trim().toLowerCase();
+        const context = conversation.context;
+        let paymentMethod = '';
+
+        if (text === '1' || text.includes('pix')) {
+            paymentMethod = 'PIX';
+        } else if (text === '2' || text.includes('dinheiro')) {
+            paymentMethod = 'Dinheiro';
+        } else if (text === '3' || text.includes('cartao') || text.includes('cartão')) {
+            paymentMethod = 'Cartão';
+        } else {
+            return 'Por favor, escolha uma opção:\n1 para PIX\n2 para Dinheiro\n3 para Cartão';
+        }
+
+        // Finalize order (Simplified implementation)
+        const cart = context.cart || [];
+        let subtotal = 0;
+        cart.forEach(item => subtotal += item.price * item.quantity);
+
+        // Create local order object for confirmation
+        const orderData = {
+            customerName: conversation.customerName || 'Cliente WhatsApp',
+            phone: conversation.customerPhone,
+            address: context.tempData?.address || 'N/A',
+            items: cart,
+            total: subtotal,
+            paymentMethod: paymentMethod,
+            status: 'Pendente',
+            timestamp: new Date().toISOString()
+        };
+
+        // In a real scenario, we would insert into 'orders' table here
+        // For now, let's just confirm and clear context
+        const { data: newOrder, error } = await supabase
+            .from('orders')
+            .insert([{
+                customer_name: orderData.customerName,
+                phone: orderData.phone,
+                address: orderData.address,
+                items: orderData.items,
+                total: orderData.total,
+                payment_method: orderData.paymentMethod,
+                status: 'Pendente',
+                source: 'whatsapp'
+            }])
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Error creating order:', error);
+            return 'Desculpe, deu um erro ao processar seu pedido. Um atendente irá te ajudar em instantes.';
+        }
+
+        // Reset conversation
+        await this.updateContext(conversation.id, {
+            currentStep: undefined,
+            cart: [],
+            tempData: {}
+        });
+
+        await supabase.rpc('increment_chatbot_analytics', {
+            p_date: new Date().toISOString().split('T')[0],
+            p_field: 'orders_placed'
+        });
+
+        return this.getTemplate('order_confirmation', {
+            order_number: newOrder.daily_order_number.toString(),
+            total: orderData.total.toFixed(2).replace('.', ','),
+            address: orderData.address,
+            payment_method: orderData.paymentMethod,
+            estimated_time: '30-45 min'
+        });
     }
 
     /**

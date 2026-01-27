@@ -18,7 +18,10 @@ import {
     Power,
     Edit,
     Save,
-    Plus
+    Plus,
+    Globe,
+    Link,
+    Terminal
 } from 'lucide-react';
 import {
     ChatbotConfig,
@@ -30,8 +33,9 @@ import {
 
 export default function AdminChatbot() {
     const [user, setUser] = useState<any>(null);
-    const [activeTab, setActiveTab] = useState<'config' | 'conversations' | 'templates' | 'analytics'>('config');
+    const [activeTab, setActiveTab] = useState<'config' | 'conversations' | 'templates' | 'analytics' | 'integration'>('config');
     const [config, setConfig] = useState<ChatbotConfig | null>(null);
+    const [wahaConfig, setWahaConfig] = useState({ url: '', session: 'default', apiKey: '' });
     const [conversations, setConversations] = useState<ChatbotConversation[]>([]);
     const [templates, setTemplates] = useState<ChatbotTemplate[]>([]);
     const [analytics, setAnalytics] = useState<ChatbotAnalytics[]>([]);
@@ -55,6 +59,7 @@ export default function AdminChatbot() {
         setLoading(true);
         await Promise.all([
             loadConfig(),
+            loadWahaConfig(),
             loadConversations(),
             loadTemplates(),
             loadAnalytics()
@@ -79,6 +84,21 @@ export default function AdminChatbot() {
                 handoffKeywords: data.handoff_keywords,
                 autoResponseDelayMs: data.auto_response_delay_ms,
                 maxRetriesBeforeHandoff: data.max_retries_before_handoff
+            });
+        }
+    };
+
+    const loadWahaConfig = async () => {
+        const { data } = await supabase
+            .from('store_config')
+            .select('waha_url, waha_session, waha_api_key')
+            .single();
+
+        if (data) {
+            setWahaConfig({
+                url: data.waha_url || '',
+                session: data.waha_session || 'default',
+                apiKey: data.waha_api_key || ''
             });
         }
     };
@@ -182,6 +202,22 @@ export default function AdminChatbot() {
             .eq('id', config.id);
 
         setEditingConfig(false);
+    };
+
+    const saveWahaConfig = async () => {
+        const { error } = await supabase
+            .from('store_config')
+            .update({
+                waha_url: wahaConfig.url,
+                waha_session: wahaConfig.session,
+                waha_api_key: wahaConfig.apiKey
+            })
+            .order('id', { ascending: true }) // Usually only one config
+            .limit(1);
+
+        if (!error) {
+            alert('Configuração de integração salva!');
+        }
     };
 
     const assignToMe = async (conversation: ChatbotConversation) => {
@@ -306,6 +342,7 @@ export default function AdminChatbot() {
                         { id: 'config', label: 'Configuração', icon: Settings },
                         { id: 'conversations', label: 'Conversas', icon: MessageSquare },
                         { id: 'templates', label: 'Templates', icon: MessageCircle },
+                        { id: 'integration', label: 'Integração', icon: Globe },
                         { id: 'analytics', label: 'Análises', icon: BarChart3 }
                     ].map((tab) => (
                         <button
@@ -566,6 +603,93 @@ export default function AdminChatbot() {
                                     )}
                                 </div>
                             ))}
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'integration' && (
+                    <div className="space-y-6 max-w-2xl">
+                        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6">
+                            <div className="flex items-center gap-4 mb-6">
+                                <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center text-blue-400">
+                                    <Globe size={24} />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-black text-white">Configuração WAHA</h2>
+                                    <p className="text-slate-400 text-sm">Integração com WhatsApp HTTP API</p>
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-slate-500 uppercase ml-1">WAHA API URL</label>
+                                    <input
+                                        type="text"
+                                        value={wahaConfig.url}
+                                        onChange={(e) => setWahaConfig({ ...wahaConfig, url: e.target.value })}
+                                        placeholder="http://seu-servidor:3000"
+                                        className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-600"
+                                    />
+                                    <p className="text-[10px] text-slate-500 italic ml-1">A URL onde seu serviço WAHA está rodando.</p>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-bold text-slate-500 uppercase ml-1">Sessão</label>
+                                        <input
+                                            type="text"
+                                            value={wahaConfig.session}
+                                            onChange={(e) => setWahaConfig({ ...wahaConfig, session: e.target.value })}
+                                            placeholder="default"
+                                            className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-600"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-bold text-slate-500 uppercase ml-1">API Key (Opcional)</label>
+                                        <input
+                                            type="password"
+                                            value={wahaConfig.apiKey}
+                                            onChange={(e) => setWahaConfig({ ...wahaConfig, apiKey: e.target.value })}
+                                            placeholder="Sua senha WAHA"
+                                            className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-600"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="pt-4">
+                                    <button
+                                        onClick={saveWahaConfig}
+                                        className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-black transition-all flex items-center justify-center gap-2"
+                                    >
+                                        <Save size={20} />
+                                        Salvar Configuração
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6">
+                            <h3 className="text-white font-bold mb-4 flex items-center gap-2">
+                                <Link size={18} className="text-emerald-500" />
+                                Configuração do Webhook
+                            </h3>
+                            <p className="text-slate-400 text-sm mb-4">
+                                No seu painel WAHA, configure o Webhook para enviar eventos do tipo <code className="bg-slate-800 px-1 rounded text-emerald-400 font-mono">message</code> para a seguinte URL:
+                            </p>
+                            <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 flex items-center justify-between group">
+                                <code className="text-emerald-500 text-xs overflow-hidden text-ellipsis whitespace-nowrap">
+                                    {`https://saikxbildeupefudrrhl.supabase.co/functions/v1/whatsapp-webhook`}
+                                </code>
+                                <button
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(`https://saikxbildeupefudrrhl.supabase.co/functions/v1/whatsapp-webhook`);
+                                        alert('Copiado!');
+                                    }}
+                                    className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors"
+                                >
+                                    <Terminal size={16} />
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}
