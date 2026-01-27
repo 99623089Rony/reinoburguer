@@ -295,14 +295,31 @@ export default function AdminChatbot() {
         const baseUrl = getWahaBaseUrl();
         if (!baseUrl) return;
         setIsRefreshingQr(true);
+        console.log('Fetching QR Code from:', baseUrl);
+
         try {
-            const response = await fetch(`${baseUrl}/api/${wahaConfig.session}/auth/screenshot`, {
+            // Try standard WAHA screenshot path first
+            let response = await fetch(`${baseUrl}/api/screenshot?session=${wahaConfig.session}`, {
                 headers: wahaConfig.apiKey ? { 'X-Api-Key': wahaConfig.apiKey } : {}
             });
-            if (!response.ok) throw new Error('Failed to fetch screenshot');
+
+            // If that fails, try the older path
+            if (!response.ok) {
+                console.log('Standard path failed, trying alternative...');
+                response = await fetch(`${baseUrl}/api/${wahaConfig.session}/auth/screenshot`, {
+                    headers: wahaConfig.apiKey ? { 'X-Api-Key': wahaConfig.apiKey } : {}
+                });
+            }
+
+            if (!response.ok) {
+                const errText = await response.text();
+                throw new Error(`Failed to fetch screenshot: ${response.status} ${errText}`);
+            }
+
             const blob = await response.blob();
             const url = URL.createObjectURL(blob);
             setQrCode(url);
+            console.log('QR Code fetched successfully!');
         } catch (err) {
             console.error('Error fetching QR Code:', err);
         } finally {
@@ -313,6 +330,8 @@ export default function AdminChatbot() {
     const startSession = async () => {
         const baseUrl = getWahaBaseUrl();
         if (!baseUrl) return;
+
+        console.log('Starting session at:', baseUrl);
         try {
             const response = await fetch(`${baseUrl}/api/sessions/${wahaConfig.session}/start`, {
                 method: 'POST',
@@ -321,13 +340,19 @@ export default function AdminChatbot() {
                     ...(wahaConfig.apiKey ? { 'X-Api-Key': wahaConfig.apiKey } : {})
                 }
             });
-            if (!response.ok) {
+
+            if (response.ok) {
+                console.log('Session start command sent!');
+                // Wait slightly longer for session to initialize
+                setTimeout(checkStatus, 3000);
+            } else {
                 const errorText = await response.text();
                 console.error('Start session error:', errorText);
+                alert(`Erro ao iniciar: ${response.status}. Verifique se a Chave API está correta.`);
             }
-            setTimeout(checkStatus, 2000);
         } catch (err) {
-            alert('Erro ao iniciar sessão. Verifique se a URL está correta.');
+            console.error('Connection error starting session:', err);
+            alert('Não foi possível conectar ao servidor. Verifique a URL.');
         }
     };
 
