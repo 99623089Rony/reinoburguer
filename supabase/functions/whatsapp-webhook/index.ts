@@ -43,7 +43,7 @@ serve(async (req) => {
             // Get Store Config for health check
             const { data: storeConfig } = await supabase
                 .from("store_config")
-                .select("waha_url")
+                .select("waha_url, waha_api_key")
                 .maybeSingle();
 
             let wahaHealth = "unknown";
@@ -51,6 +51,9 @@ serve(async (req) => {
                 try {
                     const healthRes = await fetch(`${storeConfig.waha_url}/api/version`, {
                         method: "GET",
+                        headers: {
+                            ...(storeConfig.waha_api_key ? { "X-Api-Key": storeConfig.waha_api_key } : {})
+                        },
                         signal: AbortSignal.timeout(5000)
                     });
                     wahaHealth = healthRes.ok ? "online" : `error_${healthRes.status}`;
