@@ -33,7 +33,8 @@ export const AdminMenu: React.FC = () => {
         inStock: true,
         highlighted: false,
         trackStock: false,
-        stockQuantity: 0 as number | string
+        stockQuantity: 0 as number | string,
+        costPrice: '' as string | number
     });
 
     const handleOpenProductModal = (product?: Product) => {
@@ -48,7 +49,8 @@ export const AdminMenu: React.FC = () => {
                 inStock: product.inStock,
                 highlighted: product.highlighted,
                 trackStock: product.trackStock || false,
-                stockQuantity: product.stockQuantity || 0
+                stockQuantity: product.stockQuantity || 0,
+                costPrice: product.costPrice ? product.costPrice.toString().replace('.', ',') : ''
             });
         } else {
             setEditingProduct(null);
@@ -61,7 +63,8 @@ export const AdminMenu: React.FC = () => {
                 inStock: true,
                 highlighted: false,
                 trackStock: false,
-                stockQuantity: 0
+                stockQuantity: 0,
+                costPrice: ''
             });
         }
         setShowProductModal(true);
@@ -88,7 +91,8 @@ export const AdminMenu: React.FC = () => {
             inStock: productForm.inStock,
             highlighted: productForm.highlighted,
             trackStock: productForm.trackStock,
-            stockQuantity: productForm.trackStock ? (parseInt(productForm.stockQuantity.toString()) || 0) : 0
+            stockQuantity: productForm.trackStock ? (parseInt(productForm.stockQuantity.toString()) || 0) : 0,
+            costPrice: productForm.costPrice ? parseFloat(productForm.costPrice.toString().replace(',', '.')) : null
         };
 
         try {
@@ -749,12 +753,23 @@ export const AdminMenu: React.FC = () => {
                                     </div>
 
                                     <div className="space-y-2">
-                                        <label className="text-xs font-bold text-slate-400 uppercase">Preço (R$)</label>
+                                        <label className="text-xs font-bold text-slate-400 uppercase">Preço Venda (R$)</label>
                                         <input
                                             required
                                             type="text"
                                             value={productForm.price}
                                             onChange={e => setProductForm({ ...productForm, price: e.target.value })}
+                                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:border-orange-500 outline-none transition-all"
+                                            placeholder="0,00"
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-bold text-slate-400 uppercase">Preço Custo (R$)</label>
+                                        <input
+                                            type="text"
+                                            value={productForm.costPrice}
+                                            onChange={e => setProductForm({ ...productForm, costPrice: e.target.value })}
                                             className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:border-orange-500 outline-none transition-all"
                                             placeholder="0,00"
                                         />

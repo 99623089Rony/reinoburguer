@@ -278,7 +278,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       inStock: !!p.in_stock,
       highlighted: !!p.highlighted,
       trackStock: !!p.track_stock, // Mapped
-      stockQuantity: p.stock_quantity ?? 0 // Mapped
+      stockQuantity: p.stock_quantity ?? 0, // Mapped
+      costPrice: p.cost_price // Mapped
     })));
   }, []);
 
@@ -704,7 +705,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           in_stock: p.inStock,
           highlighted: p.highlighted,
           track_stock: p.trackStock, // Mapped
-          stock_quantity: p.stockQuantity // Mapped
+          stock_quantity: p.stockQuantity, // Mapped
+          cost_price: p.costPrice // Mapped
         };
         await supabase.from('products').insert([mapped]);
         fetchProducts();
@@ -719,7 +721,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           in_stock: p.inStock,
           highlighted: p.highlighted,
           track_stock: p.trackStock, // Mapped
-          stock_quantity: p.stockQuantity // Mapped
+          stock_quantity: p.stockQuantity, // Mapped
+          cost_price: p.costPrice // Mapped
         };
         await supabase.from('products').update(mapped).eq('id', p.id);
         fetchProducts();

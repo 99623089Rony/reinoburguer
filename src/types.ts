@@ -18,6 +18,7 @@ export interface Product {
   highlighted: boolean;
   trackStock?: boolean;
   stockQuantity?: number;
+  costPrice?: number;
 }
 
 export interface CartItem extends Product {
