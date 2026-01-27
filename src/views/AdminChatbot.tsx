@@ -28,7 +28,8 @@ import {
     Save,
     TrendingUp,
     MessageCircle,
-    UserCheck
+    UserCheck,
+    RefreshCw
 } from 'lucide-react';
 import {
     ChatbotConfig,
@@ -43,6 +44,8 @@ export default function AdminChatbot() {
     const [activeTab, setActiveTab] = useState<'dashboard' | 'conversations' | 'rules' | 'integration' | 'analytics'>('dashboard');
     const [config, setConfig] = useState<ChatbotConfig | null>(null);
     const [wahaConfig, setWahaConfig] = useState({ url: '', session: 'default', apiKey: '', status: 'DISCONNECTED' });
+    const [qrCode, setQrCode] = useState<string | null>(null);
+    const [isRefreshingQr, setIsRefreshingQr] = useState(false);
     const [conversations, setConversations] = useState<ChatbotConversation[]>([]);
     const [templates, setTemplates] = useState<ChatbotTemplate[]>([]);
     const [analytics, setAnalytics] = useState<ChatbotAnalytics[]>([]);
@@ -220,13 +223,96 @@ export default function AdminChatbot() {
                 waha_session: wahaConfig.session,
                 waha_api_key: wahaConfig.apiKey
             })
-            .order('id', { ascending: true }) // Usually only one config
-            .limit(1);
+            .eq('id', (config as any)?.storeId || 1);
 
         if (!error) {
-            alert('Configuração de integração salva!');
+            alert('Configuração salva com sucesso!');
+            checkStatus();
+        } else {
+            alert('Erro ao salvar configuração.');
         }
     };
+
+    const checkStatus = async () => {
+        if (!wahaConfig.url) return;
+
+        try {
+            const baseUrl = wahaConfig.url.endsWith('/') ? wahaConfig.url.slice(0, -1) : wahaConfig.url;
+            const response = await fetch(`${baseUrl}/api/sessions/${wahaConfig.session}`, {
+                headers: wahaConfig.apiKey ? { 'X-Api-Key': wahaConfig.apiKey } : {}
+            });
+            const data = await response.json();
+
+            if (data && data.status) {
+                setWahaConfig(prev => ({ ...prev, status: data.status }));
+                if (data.status === 'SCAN_QR_CODE') {
+                    fetchQrCode();
+                } else {
+                    setQrCode(null);
+                }
+            }
+        } catch (err) {
+            console.error('Error checking WAHA status:', err);
+            setWahaConfig(prev => ({ ...prev, status: 'OFFLINE' }));
+        }
+    };
+
+    const fetchQrCode = async () => {
+        if (!wahaConfig.url) return;
+        setIsRefreshingQr(true);
+        try {
+            const baseUrl = wahaConfig.url.endsWith('/') ? wahaConfig.url.slice(0, -1) : wahaConfig.url;
+            const response = await fetch(`${baseUrl}/api/${wahaConfig.session}/auth/screenshot`, {
+                headers: wahaConfig.apiKey ? { 'X-Api-Key': wahaConfig.apiKey } : {}
+            });
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+            setQrCode(url);
+        } catch (err) {
+            console.error('Error fetching QR Code:', err);
+        } finally {
+            setIsRefreshingQr(false);
+        }
+    };
+
+    const startSession = async () => {
+        if (!wahaConfig.url) return;
+        try {
+            const baseUrl = wahaConfig.url.endsWith('/') ? wahaConfig.url.slice(0, -1) : wahaConfig.url;
+            await fetch(`${baseUrl}/api/sessions/${wahaConfig.session}/start`, {
+                method: 'POST',
+                headers: wahaConfig.apiKey ? { 'X-Api-Key': wahaConfig.apiKey } : {}
+            });
+            setTimeout(checkStatus, 2000);
+        } catch (err) {
+            alert('Erro ao iniciar sessão.');
+        }
+    };
+
+    const logoutSession = async () => {
+        if (!window.confirm('Tem certeza que deseja desconectar o WhatsApp?')) return;
+        if (!wahaConfig.url) return;
+
+        try {
+            const baseUrl = wahaConfig.url.endsWith('/') ? wahaConfig.url.slice(0, -1) : wahaConfig.url;
+            await fetch(`${baseUrl}/api/sessions/${wahaConfig.session}/logout`, {
+                method: 'POST',
+                headers: wahaConfig.apiKey ? { 'X-Api-Key': wahaConfig.apiKey } : {}
+            });
+            setWahaConfig(prev => ({ ...prev, status: 'DISCONNECTED' }));
+            setQrCode(null);
+        } catch (err) {
+            alert('Erro ao desconectar.');
+        }
+    };
+
+    useEffect(() => {
+        if (activeTab === 'integration') {
+            checkStatus();
+            const interval = setInterval(checkStatus, 15000); // Check every 15s
+            return () => clearInterval(interval);
+        }
+    }, [activeTab, wahaConfig.url, wahaConfig.session]);
 
     const assignToMe = async (conversation: ChatbotConversation) => {
         await supabase
@@ -686,34 +772,65 @@ export default function AdminChatbot() {
                                             </div>
                                             <h3 className="text-2xl font-black text-white">Brenda Conectada!</h3>
                                             <p className="text-slate-400 text-sm max-w-xs">Ela está pronta e online para atender seus clientes.</p>
-                                            <button className="px-6 py-2 bg-slate-800 hover:bg-red-500/20 hover:text-red-400 rounded-xl text-slate-400 font-bold transition-all text-xs">
+                                            <button
+                                                onClick={logoutSession}
+                                                className="px-6 py-2 bg-slate-800 hover:bg-red-500/20 hover:text-red-400 rounded-xl text-slate-400 font-bold transition-all text-xs"
+                                            >
                                                 Desconectar Sessão
                                             </button>
                                         </div>
                                     ) : (
                                         <div className="text-center space-y-6">
-                                            <div className="w-64 h-64 bg-white rounded-2xl p-4 mx-auto shadow-[0_0_50px_rgba(255,255,255,0.1)] group cursor-pointer relative">
-                                                {/* Simulated QR Code */}
-                                                <div className="w-full h-full bg-slate-100 flex items-center justify-center relative overflow-hidden rounded-lg">
-                                                    <div className="absolute inset-0 bg-slate-200 animate-pulse" />
-                                                    <p className="relative z-10 text-slate-400 font-black text-xs uppercase tracking-widest text-center px-4">
-                                                        Aguardando Servidor...
-                                                    </p>
-                                                </div>
+                                            <div
+                                                onClick={checkStatus}
+                                                className="w-64 h-64 bg-white rounded-2xl p-4 mx-auto shadow-[0_0_50px_rgba(255,255,255,0.1)] group cursor-pointer relative overflow-hidden"
+                                            >
+                                                {qrCode ? (
+                                                    <img src={qrCode} alt="WhatsApp QR Code" className="w-full h-full object-contain" />
+                                                ) : (
+                                                    <div className="w-full h-full bg-slate-100 flex items-center justify-center relative overflow-hidden rounded-lg">
+                                                        <div className="absolute inset-0 bg-slate-200 animate-pulse" />
+                                                        <p className="relative z-10 text-slate-400 font-black text-[10px] uppercase tracking-widest text-center px-4">
+                                                            Aguardando QR Code...
+                                                        </p>
+                                                    </div>
+                                                )}
+
+                                                {isRefreshingQr && (
+                                                    <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
+                                                        <RefreshCw size={24} className="text-emerald-500 animate-spin" />
+                                                    </div>
+                                                )}
+
                                                 <div className="absolute inset-x-0 -bottom-3 flex justify-center">
                                                     <span className="bg-emerald-500 text-white text-[10px] font-black px-4 py-1 rounded-full shadow-lg uppercase tracking-wider">
-                                                        Atualizando em 15s
+                                                        {isRefreshingQr ? 'Atualizando...' : 'Clique para atualizar'}
                                                     </span>
                                                 </div>
                                             </div>
                                             <div>
-                                                <h3 className="text-lg font-black text-white">Pronto para conectar?</h3>
-                                                <p className="text-slate-500 text-sm mt-1">Abra o WhatsApp &gt; Aparelhos Conectados e escaneie.</p>
+                                                <h3 className="text-lg font-black text-white">
+                                                    Status: {wahaConfig.status === 'OFFLINE' ? 'Servidor Offline' : 'Aguardando QR Code'}
+                                                </h3>
+                                                <p className="text-slate-500 text-sm mt-1 italic">
+                                                    No WhatsApp: Aparelhos Conectados &gt; Conectar um Aparelho
+                                                </p>
                                             </div>
-                                            <button className="flex items-center gap-2 px-8 py-3 bg-emerald-500 hover:bg-emerald-600 rounded-2xl text-white font-black transition-all mx-auto">
-                                                <Plus size={20} />
-                                                Gerar Novo QR Code
-                                            </button>
+                                            <div className="flex gap-3 justify-center">
+                                                <button
+                                                    onClick={startSession}
+                                                    className="flex items-center gap-2 px-8 py-3 bg-emerald-500 hover:bg-emerald-600 rounded-2xl text-white font-black transition-all"
+                                                >
+                                                    <Zap size={20} />
+                                                    Iniciar Sessão
+                                                </button>
+                                                <button
+                                                    onClick={fetchQrCode}
+                                                    className="p-3 bg-slate-800 hover:bg-slate-700 rounded-2xl border border-slate-700 transition-all text-slate-400"
+                                                >
+                                                    <RefreshCw size={20} />
+                                                </button>
+                                            </div>
                                         </div>
                                     )}
                                 </div>
