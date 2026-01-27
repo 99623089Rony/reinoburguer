@@ -11,17 +11,24 @@ import {
     X,
     CheckCircle,
     Clock,
-    TrendingUp,
-    MessageCircle,
-    UserCheck,
+    Plus,
+    Globe,
+    Link,
+    Terminal,
+    Zap,
+    AlertTriangle,
+    Shield,
+    Smartphone,
+    History,
+    FileText,
+    Brain,
     ShoppingCart,
     Power,
     Edit,
     Save,
-    Plus,
-    Globe,
-    Link,
-    Terminal
+    TrendingUp,
+    MessageCircle,
+    UserCheck
 } from 'lucide-react';
 import {
     ChatbotConfig,
@@ -33,9 +40,9 @@ import {
 
 export default function AdminChatbot() {
     const [user, setUser] = useState<any>(null);
-    const [activeTab, setActiveTab] = useState<'config' | 'conversations' | 'templates' | 'analytics' | 'integration'>('config');
+    const [activeTab, setActiveTab] = useState<'dashboard' | 'conversations' | 'rules' | 'integration' | 'analytics'>('dashboard');
     const [config, setConfig] = useState<ChatbotConfig | null>(null);
-    const [wahaConfig, setWahaConfig] = useState({ url: '', session: 'default', apiKey: '' });
+    const [wahaConfig, setWahaConfig] = useState({ url: '', session: 'default', apiKey: '', status: 'DISCONNECTED' });
     const [conversations, setConversations] = useState<ChatbotConversation[]>([]);
     const [templates, setTemplates] = useState<ChatbotTemplate[]>([]);
     const [analytics, setAnalytics] = useState<ChatbotAnalytics[]>([]);
@@ -98,7 +105,8 @@ export default function AdminChatbot() {
             setWahaConfig({
                 url: data.waha_url || '',
                 session: data.waha_session || 'default',
-                apiKey: data.waha_api_key || ''
+                apiKey: data.waha_api_key || '',
+                status: 'DISCONNECTED'
             });
         }
     };
@@ -339,11 +347,11 @@ export default function AdminChatbot() {
                 {/* Tabs */}
                 <div className="flex gap-2 bg-slate-900 p-2 rounded-2xl border border-slate-800">
                     {[
-                        { id: 'config', label: 'Configuração', icon: Settings },
+                        { id: 'dashboard', label: 'Painel', icon: BarChart3 },
                         { id: 'conversations', label: 'Conversas', icon: MessageSquare },
-                        { id: 'templates', label: 'Templates', icon: MessageCircle },
-                        { id: 'integration', label: 'Integração', icon: Globe },
-                        { id: 'analytics', label: 'Análises', icon: BarChart3 }
+                        { id: 'rules', label: 'Regras', icon: Brain },
+                        { id: 'integration', label: 'Conectar', icon: Zap },
+                        { id: 'analytics', label: 'Análises', icon: TrendingUp }
                     ].map((tab) => (
                         <button
                             key={tab.id}
@@ -360,80 +368,68 @@ export default function AdminChatbot() {
                 </div>
 
                 {/* Content */}
-                {activeTab === 'config' && (
+                {/* Dashboard Tab */}
+                {activeTab === 'dashboard' && (
                     <div className="space-y-6">
-                        {/* Status Card */}
-                        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6">
-                            <div className="flex items-center justify-between mb-4">
-                                <h2 className="text-xl font-black text-white">Status do Chatbot</h2>
-                                <div className={`px-4 py-2 rounded-full text-sm font-bold ${config?.isActive
-                                    ? 'bg-emerald-500/20 text-emerald-400'
-                                    : 'bg-slate-700 text-slate-400'
-                                    }`}>
-                                    {config?.isActive ? '● Online' : '○ Offline'}
+                        {/* Status Summary */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 relative overflow-hidden group">
+                                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                                    <Zap size={80} className="text-emerald-500" />
                                 </div>
-                            </div>
-                            <p className="text-slate-400 text-sm">
-                                {config?.isActive
-                                    ? 'O chatbot está respondendo automaticamente às mensagens dos clientes.'
-                                    : 'O chatbot está desativado. Ative-o para começar a responder automaticamente.'}
-                            </p>
-                        </div>
-
-                        {/* Welcome Message */}
-                        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6">
-                            <div className="flex items-center justify-between mb-4">
-                                <h2 className="text-xl font-black text-white">Mensagem de Boas-Vindas</h2>
-                                {!editingConfig ? (
-                                    <button
-                                        onClick={() => setEditingConfig(true)}
-                                        className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-300 font-bold transition-all"
-                                    >
-                                        <Edit size={16} />
-                                        Editar
-                                    </button>
-                                ) : (
-                                    <button
-                                        onClick={saveConfig}
-                                        className="flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 rounded-xl text-white font-bold transition-all"
-                                    >
-                                        <Save size={16} />
-                                        Salvar
-                                    </button>
-                                )}
+                                <h3 className="text-slate-400 text-sm font-bold uppercase mb-4">Status da Brenda</h3>
+                                <div className="flex items-center gap-3">
+                                    <div className={`w-3 h-3 rounded-full animate-pulse ${wahaConfig.status === 'CONNECTED' ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                                    <span className="text-2xl font-black text-white">
+                                        {wahaConfig.status === 'CONNECTED' ? 'Conectada' : 'Desconectada'}
+                                    </span>
+                                </div>
+                                <p className="text-slate-500 text-xs mt-2">Sessão: {wahaConfig.session}</p>
                             </div>
 
-                            {editingConfig ? (
-                                <textarea
-                                    value={config?.welcomeMessage || ''}
-                                    onChange={(e) => setConfig(config ? { ...config, welcomeMessage: e.target.value } : null)}
-                                    className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white font-mono text-sm resize-none"
-                                    rows={8}
-                                />
-                            ) : (
-                                <div className="bg-slate-800 border border-slate-700 rounded-xl p-4">
-                                    <pre className="text-slate-300 font-mono text-sm whitespace-pre-wrap">
-                                        {config?.welcomeMessage}
-                                    </pre>
+                            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 relative overflow-hidden group">
+                                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                                    <MessageSquare size={80} className="text-blue-500" />
                                 </div>
-                            )}
+                                <h3 className="text-slate-400 text-sm font-bold uppercase mb-4">Conversas Hoje</h3>
+                                <span className="text-4xl font-black text-white">{analyticsStats?.totalConversations || 0}</span>
+                                <p className="text-slate-500 text-xs mt-2">7 dias: {analyticsStats?.totalConversations || 0} contatos</p>
+                            </div>
+
+                            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 relative overflow-hidden group">
+                                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                                    <ShoppingCart size={80} className="text-purple-500" />
+                                </div>
+                                <h3 className="text-slate-400 text-sm font-bold uppercase mb-4">Pedidos via Bot</h3>
+                                <span className="text-4xl font-black text-white">{analyticsStats?.totalOrders || 0}</span>
+                                <p className="text-slate-500 text-xs mt-2">Taxa de conversão: {analyticsStats?.conversionRate || 0}%</p>
+                            </div>
                         </div>
 
-                        {/* Menu Options */}
+                        {/* Recent Activity Mini List */}
                         <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6">
-                            <h2 className="text-xl font-black text-white mb-4">Opções do Menu</h2>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                {config?.menuOptions.map((option) => (
-                                    <div
-                                        key={option.number}
-                                        className="bg-slate-800 border border-slate-700 rounded-xl p-4 flex items-center gap-3"
-                                    >
-                                        <div className="w-10 h-10 bg-emerald-500/20 rounded-lg flex items-center justify-center text-emerald-400 font-black">
-                                            {option.number}
+                            <h2 className="text-xl font-black text-white mb-6 flex items-center gap-2">
+                                <History size={20} className="text-emerald-500" />
+                                Atividade Recente
+                            </h2>
+                            <div className="space-y-4">
+                                {conversations.slice(0, 5).map(conv => (
+                                    <div key={conv.id} className="flex items-center justify-between p-4 bg-slate-800/50 rounded-2xl border border-slate-800">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-10 h-10 bg-slate-700 rounded-full flex items-center justify-center text-white font-bold">
+                                                {conv.customerName?.[0] || 'C'}
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-white text-sm">{conv.customerName || conv.customerPhone}</p>
+                                                <p className="text-slate-500 text-xs">{conv.status === 'with_agent' ? 'Em atendimento humano' : 'Sendo atendido pela Brenda'}</p>
+                                            </div>
                                         </div>
-                                        <div className="flex-1">
-                                            <p className="text-white font-bold text-sm">{option.label}</p>
-                                            <p className="text-slate-500 text-xs">{option.action}</p>
+                                        <div className="text-right">
+                                            <p className="text-slate-400 text-xs font-mono">{new Date(conv.lastMessageAt).toLocaleTimeString()}</p>
+                                            <span className={`text-[10px] uppercase font-black px-2 py-0.5 rounded ${conv.status === 'waiting_agent' ? 'bg-amber-500/20 text-amber-500' : 'bg-emerald-500/20 text-emerald-500'
+                                                }`}>
+                                                {conv.status === 'waiting_agent' ? 'Precisa de Ajuda' : 'Automatizado'}
+                                            </span>
                                         </div>
                                     </div>
                                 ))}
@@ -570,112 +566,237 @@ export default function AdminChatbot() {
                     </div>
                 )}
 
-                {activeTab === 'templates' && (
-                    <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6">
-                        <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-xl font-black text-white">Templates de Mensagens</h2>
-                            <button className="flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 rounded-xl text-white font-bold">
-                                <Plus size={16} />
-                                Novo Template
-                            </button>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {templates.map((template) => (
-                                <div key={template.id} className="bg-slate-800 border border-slate-700 rounded-xl p-4">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <h3 className="font-bold text-white">{template.name}</h3>
-                                        <span className="text-xs px-2 py-1 bg-slate-700 rounded-full text-slate-400">
-                                            {template.category}
-                                        </span>
-                                    </div>
-                                    <p className="text-slate-400 text-sm mb-2 line-clamp-3">
-                                        {template.templateText}
-                                    </p>
-                                    {template.variables.length > 0 && (
-                                        <div className="flex flex-wrap gap-1">
-                                            {template.variables.map((v) => (
-                                                <span key={v} className="text-xs px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded">
-                                                    {`{${v}}`}
-                                                </span>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {activeTab === 'integration' && (
-                    <div className="space-y-6 max-w-2xl">
+                {/* Rules Tab */}
+                {activeTab === 'rules' && (
+                    <div className="space-y-6">
                         <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6">
-                            <div className="flex items-center gap-4 mb-6">
-                                <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center text-blue-400">
-                                    <Globe size={24} />
-                                </div>
+                            <div className="flex items-center justify-between mb-6">
                                 <div>
-                                    <h2 className="text-xl font-black text-white">Configuração WAHA</h2>
-                                    <p className="text-slate-400 text-sm">Integração com WhatsApp HTTP API</p>
+                                    <h2 className="text-xl font-black text-white">Regras de Respostas</h2>
+                                    <p className="text-slate-400 text-sm">Defina como a Brenda deve responder a certas palavras ou frases.</p>
                                 </div>
+                                <button className="flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 rounded-xl text-white font-bold transition-all">
+                                    <Plus size={16} />
+                                    Nova Regra
+                                </button>
                             </div>
 
-                            <div className="space-y-4">
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold text-slate-500 uppercase ml-1">WAHA API URL</label>
-                                    <input
-                                        type="text"
-                                        value={wahaConfig.url}
-                                        onChange={(e) => setWahaConfig({ ...wahaConfig, url: e.target.value })}
-                                        placeholder="http://seu-servidor:3000"
-                                        className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-600"
-                                    />
-                                    <p className="text-[10px] text-slate-500 italic ml-1">A URL onde seu serviço WAHA está rodando.</p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {/* Rule 1: Welcome (Implicit Template) */}
+                                <div className="bg-slate-800 border border-slate-700 rounded-2xl p-5 hover:border-emerald-500/50 transition-all group">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <div className="flex items-center gap-2">
+                                            <div className="p-2 bg-emerald-500/20 rounded-lg text-emerald-400">
+                                                <Zap size={16} />
+                                            </div>
+                                            <h3 className="font-bold text-white">Saudação Inicial</h3>
+                                        </div>
+                                        <span className="text-[10px] px-2 py-0.5 bg-slate-700 rounded-full text-slate-400 font-black uppercase">Automático</span>
+                                    </div>
+                                    <p className="text-slate-400 text-sm line-clamp-2 mb-4 italic">"{config?.welcomeMessage}"</p>
+                                    <button className="w-full py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-xl text-xs font-bold transition-all">
+                                        Editar Mensagem
+                                    </button>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-bold text-slate-500 uppercase ml-1">Sessão</label>
-                                        <input
-                                            type="text"
-                                            value={wahaConfig.session}
-                                            onChange={(e) => setWahaConfig({ ...wahaConfig, session: e.target.value })}
-                                            placeholder="default"
-                                            className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-600"
-                                        />
+                                {/* Rule 2: Order flow */}
+                                <div className="bg-slate-800 border border-slate-700 rounded-2xl p-5 hover:border-blue-500/50 transition-all group">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <div className="flex items-center gap-2">
+                                            <div className="p-2 bg-blue-500/20 rounded-lg text-blue-400">
+                                                <ShoppingCart size={16} />
+                                            </div>
+                                            <h3 className="font-bold text-white">Fluxo de Pedido</h3>
+                                        </div>
+                                        <span className="text-[10px] px-2 py-0.5 bg-slate-700 rounded-full text-slate-400 font-black uppercase">Sistema</span>
                                     </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-bold text-slate-500 uppercase ml-1">API Key (Opcional)</label>
-                                        <input
-                                            type="password"
-                                            value={wahaConfig.apiKey}
-                                            onChange={(e) => setWahaConfig({ ...wahaConfig, apiKey: e.target.value })}
-                                            placeholder="Sua senha WAHA"
-                                            className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-600"
-                                        />
-                                    </div>
+                                    <p className="text-slate-400 text-sm mb-4">Ativa ao escolher "Fazer Pedido". Navega por categorias e produtos.</p>
+                                    <button className="w-full py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-xl text-xs font-bold transition-all">
+                                        Configurar Etapas
+                                    </button>
                                 </div>
 
-                                <div className="pt-4">
-                                    <button
-                                        onClick={saveWahaConfig}
-                                        className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-black transition-all flex items-center justify-center gap-2"
-                                    >
-                                        <Save size={20} />
-                                        Salvar Configuração
+                                {/* Rule 3: Agent Handoff */}
+                                <div className="bg-slate-800 border border-slate-700 rounded-2xl p-5 hover:border-amber-500/50 transition-all group">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <div className="flex items-center gap-2">
+                                            <div className="p-2 bg-amber-500/20 rounded-lg text-amber-400">
+                                                <Users size={16} />
+                                            </div>
+                                            <h3 className="font-bold text-white">Falar com Humano</h3>
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-wrap gap-1 mb-4">
+                                        {config?.handoffKeywords.map(k => (
+                                            <span key={k} className="text-[10px] px-2 py-0.5 bg-slate-900 text-slate-400 rounded-lg">{k}</span>
+                                        ))}
+                                    </div>
+                                    <button className="w-full py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-xl text-xs font-bold transition-all">
+                                        Editar Gatilhos
                                     </button>
                                 </div>
                             </div>
                         </div>
 
+                        {/* Templates section (original) */}
+                        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6">
+                            <h2 className="text-xl font-black text-white mb-6 flex items-center gap-2">
+                                <FileText size={20} className="text-emerald-500" />
+                                Mensagens Prontas
+                            </h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {templates.map((template) => (
+                                    <div key={template.id} className="bg-slate-800 border border-slate-700 rounded-xl p-4">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <h3 className="font-bold text-white text-sm">{template.name}</h3>
+                                            <span className="text-[10px] px-2 py-1 bg-slate-700 rounded-full text-slate-400 uppercase font-black">
+                                                {template.category}
+                                            </span>
+                                        </div>
+                                        <p className="text-slate-400 text-xs mb-2 line-clamp-2">
+                                            {template.templateText}
+                                        </p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'integration' && (
+                    <div className="space-y-6">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6">
+                                <div className="flex items-center gap-4 mb-6">
+                                    <div className="w-12 h-12 bg-emerald-500/20 rounded-xl flex items-center justify-center text-emerald-400 border border-emerald-500/20">
+                                        <Smartphone size={24} />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-xl font-black text-white">Conexão WhatsApp</h2>
+                                        <p className="text-slate-400 text-sm">Escaneie o QR Code para ativar a Brenda</p>
+                                    </div>
+                                </div>
+
+                                {/* Connection Box */}
+                                <div className="bg-slate-950 border border-slate-800 rounded-2xl p-8 flex flex-col items-center justify-center min-h-[400px] relative">
+                                    {wahaConfig.status === 'CONNECTED' ? (
+                                        <div className="text-center space-y-4">
+                                            <div className="w-24 h-24 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-emerald-500 animate-pulse">
+                                                <CheckCircle size={48} className="text-emerald-500" />
+                                            </div>
+                                            <h3 className="text-2xl font-black text-white">Brenda Conectada!</h3>
+                                            <p className="text-slate-400 text-sm max-w-xs">Ela está pronta e online para atender seus clientes.</p>
+                                            <button className="px-6 py-2 bg-slate-800 hover:bg-red-500/20 hover:text-red-400 rounded-xl text-slate-400 font-bold transition-all text-xs">
+                                                Desconectar Sessão
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="text-center space-y-6">
+                                            <div className="w-64 h-64 bg-white rounded-2xl p-4 mx-auto shadow-[0_0_50px_rgba(255,255,255,0.1)] group cursor-pointer relative">
+                                                {/* Simulated QR Code */}
+                                                <div className="w-full h-full bg-slate-100 flex items-center justify-center relative overflow-hidden rounded-lg">
+                                                    <div className="absolute inset-0 bg-slate-200 animate-pulse" />
+                                                    <p className="relative z-10 text-slate-400 font-black text-xs uppercase tracking-widest text-center px-4">
+                                                        Aguardando Servidor...
+                                                    </p>
+                                                </div>
+                                                <div className="absolute inset-x-0 -bottom-3 flex justify-center">
+                                                    <span className="bg-emerald-500 text-white text-[10px] font-black px-4 py-1 rounded-full shadow-lg uppercase tracking-wider">
+                                                        Atualizando em 15s
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <h3 className="text-lg font-black text-white">Pronto para conectar?</h3>
+                                                <p className="text-slate-500 text-sm mt-1">Abra o WhatsApp &gt; Aparelhos Conectados e escaneie.</p>
+                                            </div>
+                                            <button className="flex items-center gap-2 px-8 py-3 bg-emerald-500 hover:bg-emerald-600 rounded-2xl text-white font-black transition-all mx-auto">
+                                                <Plus size={20} />
+                                                Gerar Novo QR Code
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Server Settings (Advanced) */}
+                            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 flex flex-col">
+                                <div className="flex items-center gap-4 mb-6">
+                                    <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center text-blue-400 border border-blue-500/20">
+                                        <Shield size={24} />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-xl font-black text-white">Segurança & Servidor</h2>
+                                        <p className="text-slate-400 text-sm">Configurações técnicas avançadas</p>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4 flex-1">
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-slate-500 uppercase ml-1 tracking-widest">URL da Engine</label>
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="text"
+                                                value={wahaConfig.url}
+                                                onChange={(e) => setWahaConfig({ ...wahaConfig, url: e.target.value })}
+                                                placeholder="http://seu-servidor:3000"
+                                                className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-600 font-mono text-sm"
+                                            />
+                                            <button className="p-3 bg-slate-800 hover:bg-slate-700 rounded-xl border border-slate-700 transition-all">
+                                                <Link size={18} className="text-slate-400" />
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-slate-500 uppercase ml-1 tracking-widest">Sessão</label>
+                                            <input
+                                                type="text"
+                                                value={wahaConfig.session}
+                                                onChange={(e) => setWahaConfig({ ...wahaConfig, session: e.target.value })}
+                                                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white font-mono text-sm"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black text-slate-500 uppercase ml-1 tracking-widest">Chave API</label>
+                                            <input
+                                                type="password"
+                                                value={wahaConfig.apiKey}
+                                                onChange={(e) => setWahaConfig({ ...wahaConfig, apiKey: e.target.value })}
+                                                placeholder="••••••••"
+                                                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="p-4 bg-slate-950 border border-slate-800 rounded-2xl space-y-3 mt-4">
+                                        <div className="flex items-center gap-2 text-amber-500">
+                                            <AlertTriangle size={14} />
+                                            <span className="text-[10px] font-black uppercase">Atenção</span>
+                                        </div>
+                                        <p className="text-[11px] text-slate-500 leading-relaxed">
+                                            Mantenha sua Chave API em segredo. Ao trocar a URL da Engine, o bot será reiniciado e precisará de um novo QR Code.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <button
+                                    onClick={saveWahaConfig}
+                                    className="w-full py-4 mt-6 bg-slate-100 hover:bg-white text-slate-950 rounded-2xl font-black transition-all flex items-center justify-center gap-2 shadow-lg"
+                                >
+                                    <Save size={20} />
+                                    Salvar Alterações
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Webhook Info Card */}
                         <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6">
                             <h3 className="text-white font-bold mb-4 flex items-center gap-2">
-                                <Link size={18} className="text-emerald-500" />
-                                Configuração do Webhook
+                                <Terminal size={18} className="text-emerald-500" />
+                                Endereço de Escuta (Webhook)
                             </h3>
-                            <p className="text-slate-400 text-sm mb-4">
-                                No seu painel WAHA, configure o Webhook para enviar eventos do tipo <code className="bg-slate-800 px-1 rounded text-emerald-400 font-mono">message</code> para a seguinte URL:
-                            </p>
                             <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 flex items-center justify-between group">
                                 <code className="text-emerald-500 text-xs overflow-hidden text-ellipsis whitespace-nowrap">
                                     {`https://saikxbildeupefudrrhl.supabase.co/functions/v1/whatsapp-webhook`}
@@ -685,9 +806,9 @@ export default function AdminChatbot() {
                                         navigator.clipboard.writeText(`https://saikxbildeupefudrrhl.supabase.co/functions/v1/whatsapp-webhook`);
                                         alert('Copiado!');
                                     }}
-                                    className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors"
+                                    className="flex items-center gap-2 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-400 hover:text-white transition-all text-[10px] font-black uppercase"
                                 >
-                                    <Terminal size={16} />
+                                    Copiar
                                 </button>
                             </div>
                         </div>
