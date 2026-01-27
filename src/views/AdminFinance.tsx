@@ -5,8 +5,9 @@ import { DollarSign, TrendingUp, TrendingDown, Plus, Calendar, ArrowUpRight, Arr
 export const AdminFinance: React.FC = () => {
     const { transactions, addTransaction, orders } = useApp();
     const [showAddModal, setShowAddModal] = useState(false);
-    const [dateFilter, setDateFilter] = useState<'today' | 'week' | 'month' | 'all' | 'custom'>('today');
+    const [dateFilter, setDateFilter] = useState<'today' | 'week' | 'month' | 'all' | 'custom' | 'custom-month'>('today');
     const [customDate, setCustomDate] = useState(new Date().toISOString().split('T')[0]);
+    const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
     const [newTransaction, setNewTransaction] = useState({
         type: 'INCOME' as 'INCOME' | 'EXPENSE',
         amount: '',
@@ -30,9 +31,10 @@ export const AdminFinance: React.FC = () => {
                 weekAgo.setDate(weekAgo.getDate() - 7);
                 return target >= weekAgo;
             case 'month':
-                const monthAgo = new Date(now);
-                monthAgo.setMonth(monthAgo.getMonth() - 1);
-                return target >= monthAgo;
+                return target.getMonth() === now.getMonth() && target.getFullYear() === now.getFullYear();
+            case 'custom-month':
+                const [y, m] = selectedMonth.split('-').map(Number);
+                return target.getMonth() === (m - 1) && target.getFullYear() === y;
             case 'custom':
                 return target.toISOString().split('T')[0] === customDate;
             case 'all':
@@ -108,7 +110,10 @@ export const AdminFinance: React.FC = () => {
         switch (dateFilter) {
             case 'today': return 'Hoje';
             case 'week': return 'Última Semana';
-            case 'month': return 'Último Mês';
+            case 'month': return 'Mês Atual';
+            case 'custom-month':
+                const [y, m] = selectedMonth.split('-').map(Number);
+                return new Date(y, m - 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
             case 'custom': return new Date(customDate).toLocaleDateString();
             case 'all': return 'Total';
         }
@@ -127,7 +132,7 @@ export const AdminFinance: React.FC = () => {
                     {([
                         { value: 'today', label: 'Hoje' },
                         { value: 'week', label: '7 Dias' },
-                        { value: 'month', label: '30 Dias' },
+                        { value: 'month', label: 'Mês Atual' },
                         { value: 'all', label: 'Todos' }
                     ] as const).map(f => (
                         <button
@@ -142,14 +147,37 @@ export const AdminFinance: React.FC = () => {
                         </button>
                     ))}
 
-                    {dateFilter === 'custom' ? (
+                    {dateFilter === 'custom' || dateFilter === 'custom-month' ? (
                         <div className="flex items-center gap-2 animate-in fade-in zoom-in-95 duration-200">
-                            <input
-                                type="date"
-                                value={customDate}
-                                onChange={(e) => setCustomDate(e.target.value)}
-                                className="bg-slate-800 text-white border border-emerald-500 rounded-xl px-4 py-2 text-xs font-bold outline-none shadow-lg shadow-emerald-500/20 focus:ring-2 focus:ring-emerald-500/20"
-                            />
+                            {dateFilter === 'custom' ? (
+                                <input
+                                    type="date"
+                                    value={customDate}
+                                    onChange={(e) => setCustomDate(e.target.value)}
+                                    className="bg-slate-800 text-white border border-emerald-500 rounded-xl px-4 py-2 text-xs font-bold outline-none shadow-lg shadow-emerald-500/20 focus:ring-2 focus:ring-emerald-500/20"
+                                />
+                            ) : (
+                                <input
+                                    type="month"
+                                    value={selectedMonth}
+                                    onChange={(e) => setSelectedMonth(e.target.value)}
+                                    className="bg-slate-800 text-white border border-emerald-500 rounded-xl px-4 py-2 text-xs font-bold outline-none shadow-lg shadow-emerald-500/20 focus:ring-2 focus:ring-emerald-500/20"
+                                />
+                            )}
+                            <button
+                                onClick={() => setDateFilter('custom')}
+                                className={`p-2 rounded-lg border ${dateFilter === 'custom' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'border-slate-800 text-slate-500'}`}
+                                title="Escolher Dia"
+                            >
+                                <Calendar size={14} />
+                            </button>
+                            <button
+                                onClick={() => setDateFilter('custom-month')}
+                                className={`p-2 rounded-lg border ${dateFilter === 'custom-month' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'border-slate-800 text-slate-500'}`}
+                                title="Escolher Mês"
+                            >
+                                <Calendar size={14} className="opacity-50" />
+                            </button>
                         </div>
                     ) : (
                         <button
