@@ -64,7 +64,12 @@ serve(async (req) => {
                     headers: { ...corsHeaders, "Content-Type": "application/json" }
                 });
             } catch (e) {
-                return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: corsHeaders });
+                console.error(`Proxy failure for ${targetUrl}:`, e);
+                return new Response(JSON.stringify({
+                    error: "Proxy request failed",
+                    details: e.message,
+                    target: targetUrl
+                }), { status: 500, headers: corsHeaders });
             }
         }
 
@@ -80,7 +85,7 @@ serve(async (req) => {
                 return new Response(JSON.stringify({ status: "ignored" }), { headers: corsHeaders });
             }
 
-            // 2. Process message using Bot Logic (Simplified Version of ChatbotService)
+            // 2. Process message using Bot Logic
             const responseText = await processBotLogic(supabase, customerPhone, messageText, customerName);
 
             if (responseText) {
@@ -93,12 +98,16 @@ serve(async (req) => {
             });
         }
 
-        return new Response(JSON.stringify({ status: "event_ignored" }), {
+        return new Response(JSON.stringify({ status: "event_ignored", received: body.event }), {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
     } catch (error) {
-        console.error("Error processing webhook:", error);
-        return new Response(JSON.stringify({ error: error.message }), {
+        console.error("Critical Error processing webhook:", error);
+        return new Response(JSON.stringify({
+            error: "Internal Server Error",
+            message: error.message,
+            stack: error.stack
+        }), {
             status: 400,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
