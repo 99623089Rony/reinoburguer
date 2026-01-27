@@ -153,6 +153,7 @@ export interface DeliveryFee {
   is_active: boolean;
 }
 
+
 export interface Transaction {
   id: string;
   type: 'INCOME' | 'EXPENSE';
@@ -169,4 +170,80 @@ export interface FinancialSummary {
   totalIncome: number;
   totalExpense: number;
   byPaymentMethod: { method: string; amount: number }[];
+}
+
+// Chatbot Types
+export interface ChatbotConfig {
+  id: string;
+  welcomeMessage: string;
+  menuOptions: MenuOption[];
+  businessHoursMessage: string;
+  outOfHoursMessage: string;
+  isActive: boolean;
+  handoffKeywords: string[];
+  autoResponseDelayMs: number;
+  maxRetriesBeforeHandoff: number;
+}
+
+export interface MenuOption {
+  number: number;
+  label: string;
+  action: string;
+}
+
+export interface ChatbotConversation {
+  id: string;
+  customerPhone: string;
+  customerName?: string;
+  status: 'active' | 'waiting_agent' | 'with_agent' | 'closed';
+  context: ConversationContext;
+  assignedAgentId?: string;
+  retryCount: number;
+  lastMessageAt: Date;
+  createdAt: Date;
+  updatedAt: Date;
+  closedAt?: Date;
+}
+
+export interface ConversationContext {
+  currentStep?: string;
+  lastAction?: string;
+  cart?: CartItem[];
+  deliveryAddress?: string;
+  paymentMethod?: string;
+  orderNumber?: string;
+  [key: string]: any;
+}
+
+export interface ChatbotMessage {
+  id: string;
+  conversationId: string;
+  senderType: 'customer' | 'bot' | 'agent';
+  senderId?: string;
+  messageText: string;
+  messageType: 'text' | 'image' | 'menu' | 'order' | 'interactive';
+  metadata: Record<string, any>;
+  isRead: boolean;
+  createdAt: Date;
+}
+
+export interface ChatbotTemplate {
+  id: string;
+  name: string;
+  category: string;
+  templateText: string;
+  variables: string[];
+  isActive: boolean;
+  usageCount: number;
+}
+
+export interface ChatbotAnalytics {
+  id: string;
+  date: Date;
+  totalConversations: number;
+  botResolved: number;
+  agentHandoffs: number;
+  ordersPlaced: number;
+  avgResponseTimeMs: number;
+  popularIntents: Record<string, number>;
 }

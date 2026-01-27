@@ -21,6 +21,7 @@ import { CustomerProfile } from './views/CustomerProfile';
 import { AdminRewards } from './views/AdminRewards';
 import { AdminFinance } from './views/AdminFinance';
 import { AdminTeam } from './views/AdminTeam';
+import AdminChatbot from './views/AdminChatbot';
 import { AdminManualOrder } from './components/AdminManualOrder';
 import { Search, User, Utensils, Ticket, Settings, ClipboardList, Printer, MapPin, Plus } from 'lucide-react';
 import { supabase } from './lib/supabase';
@@ -137,6 +138,7 @@ const ViewManager: React.FC = () => {
       {adminTab === 'printer' && <AdminPrinter />}
       {adminTab === 'finance' && <AdminFinance />}
       {adminTab === 'team' && <AdminTeam />}
+      {adminTab === 'chatbot' && <AdminChatbot />}
       {adminTab === 'settings' && <AdminSettings />}
     </AdminLayout>
   );
