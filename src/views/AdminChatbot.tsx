@@ -241,85 +241,77 @@ export default function AdminChatbot() {
         }
     };
 
-    const getWahaBaseUrl = () => {
-        if (!wahaConfig.url) return '';
-        let url = wahaConfig.url.trim();
-        if (!url.startsWith('http')) {
-            url = 'https://' + url;
+    const callWahaProxy = async (method: string, path: string, payload?: any) => {
+        const { data, error } = await supabase.functions.invoke('whatsapp-webhook', {
+            body: {
+                event: 'proxy',
+                method,
+                path,
+                payload
+            }
+        });
+
+        if (error) {
+            console.error('Proxy error:', error);
+            throw error;
         }
-        if (url.endsWith('/')) {
-            url = url.slice(0, -1);
-        }
-        return url;
+        return data;
     };
 
     const checkStatus = async () => {
-        const baseUrl = getWahaBaseUrl();
-        if (!baseUrl) return;
+        if (!storeId) return;
 
         try {
-            const response = await fetch(`${baseUrl}/api/sessions/${wahaConfig.session}`, {
-                headers: wahaConfig.apiKey ? { 'X-Api-Key': wahaConfig.apiKey } : {}
-            });
+            const data = await callWahaProxy('GET', `/api/sessions/${wahaConfig.session}`);
 
-            if (!response.ok) {
-                if (response.status === 401) {
-                    setWahaConfig(prev => ({ ...prev, status: 'UNAUTHORIZED' }));
-                } else if (response.status === 404) {
-                    setWahaConfig(prev => ({ ...prev, status: 'DISCONNECTED' }));
+            if (data && data.status) {
+                setWahaConfig(prev => ({ ...prev, status: data.status }));
+                if (data.status === 'SCAN_QR_CODE') {
+                    fetchQrCode();
                 } else {
-                    setWahaConfig(prev => ({ ...prev, status: 'OFFLINE' }));
+                    setQrCode(null);
                 }
-                return;
+            } else {
+                // If data is null or doesn't have status, it might be 404
+                setWahaConfig(prev => ({ ...prev, status: 'DISCONNECTED' }));
             }
-
-            const contentType = response.headers.get("content-type");
-            if (contentType && contentType.indexOf("application/json") !== -1) {
-                const data = await response.json();
-                if (data && data.status) {
-                    setWahaConfig(prev => ({ ...prev, status: data.status }));
-                    if (data.status === 'SCAN_QR_CODE') {
-                        fetchQrCode();
-                    } else {
-                        setQrCode(null);
-                    }
-                }
+        } catch (err: any) {
+            if (err.message?.includes('401')) {
+                setWahaConfig(prev => ({ ...prev, status: 'UNAUTHORIZED' }));
+            } else {
+                console.error('Error checking WAHA status:', err);
+                setWahaConfig(prev => ({ ...prev, status: 'OFFLINE' }));
             }
-        } catch (err) {
-            console.error('Error checking WAHA status:', err);
-            setWahaConfig(prev => ({ ...prev, status: 'OFFLINE' }));
         }
     };
 
     const fetchQrCode = async () => {
-        const baseUrl = getWahaBaseUrl();
-        if (!baseUrl) return;
+        if (!storeId) return;
         setIsRefreshingQr(true);
-        console.log('Fetching QR Code from:', baseUrl);
+        console.log('Fetching QR Code via Proxy...');
 
         try {
-            // Try standard WAHA screenshot path first
-            let response = await fetch(`${baseUrl}/api/screenshot?session=${wahaConfig.session}`, {
-                headers: wahaConfig.apiKey ? { 'X-Api-Key': wahaConfig.apiKey } : {}
+            // We use standard fetch for binary/blob because invoke might try to parse it
+            const { data: { session } } = await supabase.auth.getSession();
+            const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://saikxbildeupefudrrhl.supabase.co'}/functions/v1/whatsapp-webhook`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session?.access_token}`
+                },
+                body: JSON.stringify({
+                    event: 'proxy',
+                    method: 'GET',
+                    path: `/api/screenshot?session=${wahaConfig.session}`
+                })
             });
 
-            // If that fails, try the older path
-            if (!response.ok) {
-                console.log('Standard path failed, trying alternative...');
-                response = await fetch(`${baseUrl}/api/${wahaConfig.session}/auth/screenshot`, {
-                    headers: wahaConfig.apiKey ? { 'X-Api-Key': wahaConfig.apiKey } : {}
-                });
-            }
-
-            if (!response.ok) {
-                const errText = await response.text();
-                throw new Error(`Failed to fetch screenshot: ${response.status} ${errText}`);
-            }
+            if (!response.ok) throw new Error('Failed to fetch screenshot');
 
             const blob = await response.blob();
             const url = URL.createObjectURL(blob);
             setQrCode(url);
-            console.log('QR Code fetched successfully!');
+            console.log('QR Code fetched successfully via proxy!');
         } catch (err) {
             console.error('Error fetching QR Code:', err);
         } finally {
@@ -328,44 +320,25 @@ export default function AdminChatbot() {
     };
 
     const startSession = async () => {
-        const baseUrl = getWahaBaseUrl();
-        if (!baseUrl) return;
+        if (!storeId) return;
 
-        console.log('Starting session at:', baseUrl);
+        console.log('Starting session via Proxy...');
         try {
-            const response = await fetch(`${baseUrl}/api/sessions/${wahaConfig.session}/start`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...(wahaConfig.apiKey ? { 'X-Api-Key': wahaConfig.apiKey } : {})
-                }
-            });
-
-            if (response.ok) {
-                console.log('Session start command sent!');
-                // Wait slightly longer for session to initialize
-                setTimeout(checkStatus, 3000);
-            } else {
-                const errorText = await response.text();
-                console.error('Start session error:', errorText);
-                alert(`Erro ao iniciar: ${response.status}. Verifique se a Chave API está correta.`);
-            }
-        } catch (err) {
-            console.error('Connection error starting session:', err);
-            alert('Não foi possível conectar ao servidor. Verifique a URL.');
+            await callWahaProxy('POST', `/api/sessions/${wahaConfig.session}/start`);
+            console.log('Session start command sent!');
+            setTimeout(checkStatus, 3000);
+        } catch (err: any) {
+            console.error('Proxy error starting session:', err);
+            alert('Não foi possível iniciar a sessão. Verifique as configurações.');
         }
     };
 
     const logoutSession = async () => {
         if (!window.confirm('Tem certeza que deseja desconectar o WhatsApp?')) return;
-        const baseUrl = getWahaBaseUrl();
-        if (!baseUrl) return;
+        if (!storeId) return;
 
         try {
-            await fetch(`${baseUrl}/api/sessions/${wahaConfig.session}/logout`, {
-                method: 'POST',
-                headers: wahaConfig.apiKey ? { 'X-Api-Key': wahaConfig.apiKey } : {}
-            });
+            await callWahaProxy('POST', `/api/sessions/${wahaConfig.session}/logout`);
             setWahaConfig(prev => ({ ...prev, status: 'DISCONNECTED' }));
             setQrCode(null);
         } catch (err) {

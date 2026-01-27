@@ -20,19 +20,60 @@ serve(async (req) => {
         const body = await req.json();
         console.log("Webhook received:", JSON.stringify(body));
 
+        // 1. Get Store Config for WAHA credentials (needed for both proxy and message)
+        const { data: storeConfig } = await supabase
+            .from("store_config")
+            .select("waha_url, waha_session, waha_api_key, is_active")
+            .single();
+
+        // Handle Proxy request from Admin Panel
+        if (body.event === "proxy") {
+            if (!storeConfig?.waha_url) {
+                return new Response(JSON.stringify({ error: "WAHA not configured" }), { status: 400, headers: corsHeaders });
+            }
+
+            const wahaUrl = storeConfig.waha_url.endsWith('/') ? storeConfig.waha_url.slice(0, -1) : storeConfig.waha_url;
+            const targetUrl = `${wahaUrl}${body.path}`;
+            console.log(`Proxying ${body.method} request to ${targetUrl}`);
+
+            try {
+                const wahaResponse = await fetch(targetUrl, {
+                    method: body.method || "GET",
+                    headers: {
+                        "Content-Type": "application/json",
+                        ...(storeConfig.waha_api_key ? { "X-Api-Key": storeConfig.waha_api_key } : {})
+                    },
+                    body: body.method !== "GET" ? JSON.stringify(body.payload) : undefined
+                });
+
+                const isImage = wahaResponse.headers.get("content-type")?.includes("image/");
+
+                if (isImage) {
+                    const blob = await wahaResponse.blob();
+                    return new Response(blob, {
+                        headers: {
+                            ...corsHeaders,
+                            "Content-Type": wahaResponse.headers.get("content-type") || "image/png"
+                        }
+                    });
+                }
+
+                const responseData = await wahaResponse.text();
+                return new Response(responseData, {
+                    status: wahaResponse.status,
+                    headers: { ...corsHeaders, "Content-Type": "application/json" }
+                });
+            } catch (e) {
+                return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: corsHeaders });
+            }
+        }
+
         // Handle WAHA message event
-        // Standard WAHA format: { event: "message", payload: { from: "...", body: "...", pushName: "..." } }
         if (body.event === "message") {
             const payload = body.payload;
             const customerPhone = payload.from.split("@")[0];
             const messageText = payload.body;
             const customerName = payload.pushName;
-
-            // 1. Get Store Config for WAHA credentials
-            const { data: storeConfig } = await supabase
-                .from("store_config")
-                .select("waha_url, waha_session, waha_api_key, is_active")
-                .single();
 
             if (!storeConfig?.is_active) {
                 console.log("Store is inactive, ignoring message.");
