@@ -439,11 +439,26 @@ export const AdminFinance: React.FC = () => {
             {showAddModal && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                     <div className="bg-slate-900 border border-slate-800 w-full max-w-md rounded-3xl p-6 space-y-6 shadow-2xl animate-in zoom-in-95 duration-200">
-                        <div className="flex justify-between items-center">
-                            <h3 className="font-black text-xl text-white">Novo Lançamento</h3>
-                            <button onClick={() => setShowAddModal(false)} className="p-2 bg-slate-800 rounded-full text-slate-400 hover:text-white">
-                                <Plus size={20} className="rotate-45" />
-                            </button>
+                        <div className="space-y-4">
+                            <div className="flex justify-between items-center">
+                                <h3 className="font-black text-xl text-white">Novo Lançamento</h3>
+                                <button onClick={() => setShowAddModal(false)} className="p-2 bg-slate-800 rounded-full text-slate-400 hover:text-white">
+                                    <Plus size={20} className="rotate-45" />
+                                </button>
+                            </div>
+
+                            {/* Current Cash Balance Display */}
+                            <div className="bg-gradient-to-r from-slate-800/50 to-emerald-900/20 border border-emerald-500/30 rounded-2xl p-4">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <Wallet size={18} className="text-emerald-400" />
+                                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Saldo Atual do Caixa</span>
+                                    </div>
+                                    <h4 className={`text-2xl font-black ${allTimeSummary.balance >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                        R$ {allTimeSummary.balance.toFixed(2).replace('.', ',')}
+                                    </h4>
+                                </div>
+                            </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-3">
