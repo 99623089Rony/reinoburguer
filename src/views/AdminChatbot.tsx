@@ -79,40 +79,62 @@ export default function AdminChatbot() {
     };
 
     const loadConfig = async () => {
-        const { data } = await supabase
-            .from('chatbot_config')
-            .select('*')
-            .single();
+        try {
+            const { data, error } = await supabase
+                .from('chatbot_config')
+                .select('*')
+                .maybeSingle();
 
-        if (data) {
-            setConfig({
-                id: data.id,
-                welcomeMessage: data.welcome_message,
-                menuOptions: data.menu_options,
-                businessHoursMessage: data.business_hours_message,
-                outOfHoursMessage: data.out_of_hours_message,
-                isActive: data.is_active,
-                handoffKeywords: data.handoff_keywords,
-                autoResponseDelayMs: data.auto_response_delay_ms,
-                maxRetriesBeforeHandoff: data.max_retries_before_handoff
-            });
+            if (error) {
+                console.error('Error loading chatbot_config:', error);
+                return;
+            }
+
+            if (data) {
+                setConfig({
+                    id: data.id,
+                    welcomeMessage: data.welcome_message,
+                    menuOptions: data.menu_options,
+                    businessHoursMessage: data.business_hours_message,
+                    outOfHoursMessage: data.out_of_hours_message,
+                    isActive: data.is_active,
+                    handoffKeywords: data.handoff_keywords,
+                    autoResponseDelayMs: data.auto_response_delay_ms,
+                    maxRetriesBeforeHandoff: data.max_retries_before_handoff
+                });
+            } else {
+                console.warn('No chatbot_config found in database.');
+            }
+        } catch (err) {
+            console.error('Crash in loadConfig:', err);
         }
     };
 
     const loadWahaConfig = async () => {
-        const { data } = await supabase
-            .from('store_config')
-            .select('id, waha_url, waha_session, waha_api_key')
-            .single();
+        try {
+            const { data, error } = await supabase
+                .from('store_config')
+                .select('id, waha_url, waha_session, waha_api_key')
+                .maybeSingle();
 
-        if (data) {
-            setStoreId(data.id);
-            setWahaConfig({
-                url: data.waha_url || '',
-                session: data.waha_session || 'default',
-                apiKey: data.waha_api_key || '',
-                status: 'DISCONNECTED'
-            });
+            if (error) {
+                console.error('Error loading store_config:', error);
+                return;
+            }
+
+            if (data) {
+                setStoreId(data.id);
+                setWahaConfig({
+                    url: data.waha_url || '',
+                    session: data.waha_session || 'default',
+                    apiKey: data.waha_api_key || '',
+                    status: 'DISCONNECTED'
+                });
+            } else {
+                console.warn('No store_config found in database.');
+            }
+        } catch (err) {
+            console.error('Crash in loadWahaConfig:', err);
         }
     };
 
