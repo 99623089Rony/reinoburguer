@@ -49,15 +49,19 @@ serve(async (req: Request) => {
             let wahaHealth = "unknown";
             if (storeConfig?.waha_url) {
                 try {
-                    const healthRes = await fetch(`${storeConfig.waha_url}/api/version`, {
+                    const target = `${storeConfig.waha_url}/api/version`;
+                    console.log(`[WAHA-BRIDGE] Diagnostic Ping to: ${target}`);
+                    const healthRes = await fetch(target, {
                         method: "GET",
                         headers: {
                             ...(storeConfig.waha_api_key ? { "X-Api-Key": storeConfig.waha_api_key } : {})
                         },
-                        signal: AbortSignal.timeout(5000)
+                        signal: AbortSignal.timeout(25000)
                     });
                     wahaHealth = healthRes.ok ? "online" : `error_${healthRes.status}`;
+                    console.log(`[WAHA-BRIDGE] Diagnostic Result: ${wahaHealth}`);
                 } catch (e: any) {
+                    console.error(`[WAHA-BRIDGE] Diagnostic Timeout/Error: ${e.message}`);
                     wahaHealth = `offline_${e.message}`;
                 }
             }

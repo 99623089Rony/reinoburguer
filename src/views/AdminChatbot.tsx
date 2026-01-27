@@ -303,6 +303,8 @@ export default function AdminChatbot() {
         if (!storeId) return;
 
         try {
+            setWahaConfig(prev => ({ ...prev, status: 'CHECKING' }));
+
             // Check bridge health
             const bridgeHealth = await checkBridge();
             if (!bridgeHealth.ok) {
@@ -906,8 +908,9 @@ export default function AdminChatbot() {
                                                     Status: {
                                                         wahaConfig.status === 'OFFLINE' ? 'Servidor WAHA Offline (Koyeb)' :
                                                             wahaConfig.status === 'BRIDGE_OFFLINE' ? 'Ponte Supabase Desconectada' :
-                                                                wahaConfig.status === 'UNAUTHORIZED' ? 'Chave API Incorreta' :
-                                                                    'Aguardando QR Code'
+                                                                wahaConfig.status === 'CHECKING' ? 'Verificando Conexão...' :
+                                                                    wahaConfig.status === 'UNAUTHORIZED' ? 'Chave API Incorreta' :
+                                                                        'Aguardando QR Code'
                                                     }
                                                 </h3>
                                                 <p className="text-slate-500 text-sm mt-1 italic">
