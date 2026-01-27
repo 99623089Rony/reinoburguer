@@ -241,16 +241,37 @@ export default function AdminChatbot() {
         }
     };
 
+    const getWahaBaseUrl = () => {
+        if (!wahaConfig.url) return '';
+        let url = wahaConfig.url.trim();
+        if (!url.startsWith('http')) {
+            url = 'https://' + url;
+        }
+        if (url.endsWith('/')) {
+            url = url.slice(0, -1);
+        }
+        return url;
+    };
+
     const checkStatus = async () => {
-        if (!wahaConfig.url) return;
+        const baseUrl = getWahaBaseUrl();
+        if (!baseUrl) return;
 
         try {
-            const baseUrl = wahaConfig.url.endsWith('/') ? wahaConfig.url.slice(0, -1) : wahaConfig.url;
             const response = await fetch(`${baseUrl}/api/sessions/${wahaConfig.session}`, {
                 headers: wahaConfig.apiKey ? { 'X-Api-Key': wahaConfig.apiKey } : {}
             });
-            const data = await response.json();
 
+            if (!response.ok) {
+                // If 404, session might not exist yet, which is fine
+                if (response.status === 404) {
+                    setWahaConfig(prev => ({ ...prev, status: 'DISCONNECTED' }));
+                    return;
+                }
+                throw new Error('Server error: ' + response.status);
+            }
+
+            const data = await response.json();
             if (data && data.status) {
                 setWahaConfig(prev => ({ ...prev, status: data.status }));
                 if (data.status === 'SCAN_QR_CODE') {
@@ -266,13 +287,14 @@ export default function AdminChatbot() {
     };
 
     const fetchQrCode = async () => {
-        if (!wahaConfig.url) return;
+        const baseUrl = getWahaBaseUrl();
+        if (!baseUrl) return;
         setIsRefreshingQr(true);
         try {
-            const baseUrl = wahaConfig.url.endsWith('/') ? wahaConfig.url.slice(0, -1) : wahaConfig.url;
             const response = await fetch(`${baseUrl}/api/${wahaConfig.session}/auth/screenshot`, {
                 headers: wahaConfig.apiKey ? { 'X-Api-Key': wahaConfig.apiKey } : {}
             });
+            if (!response.ok) throw new Error('Failed to fetch screenshot');
             const blob = await response.blob();
             const url = URL.createObjectURL(blob);
             setQrCode(url);
@@ -284,25 +306,32 @@ export default function AdminChatbot() {
     };
 
     const startSession = async () => {
-        if (!wahaConfig.url) return;
+        const baseUrl = getWahaBaseUrl();
+        if (!baseUrl) return;
         try {
-            const baseUrl = wahaConfig.url.endsWith('/') ? wahaConfig.url.slice(0, -1) : wahaConfig.url;
-            await fetch(`${baseUrl}/api/sessions/${wahaConfig.session}/start`, {
+            const response = await fetch(`${baseUrl}/api/sessions/${wahaConfig.session}/start`, {
                 method: 'POST',
-                headers: wahaConfig.apiKey ? { 'X-Api-Key': wahaConfig.apiKey } : {}
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(wahaConfig.apiKey ? { 'X-Api-Key': wahaConfig.apiKey } : {})
+                }
             });
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Start session error:', errorText);
+            }
             setTimeout(checkStatus, 2000);
         } catch (err) {
-            alert('Erro ao iniciar sessão.');
+            alert('Erro ao iniciar sessão. Verifique se a URL está correta.');
         }
     };
 
     const logoutSession = async () => {
         if (!window.confirm('Tem certeza que deseja desconectar o WhatsApp?')) return;
-        if (!wahaConfig.url) return;
+        const baseUrl = getWahaBaseUrl();
+        if (!baseUrl) return;
 
         try {
-            const baseUrl = wahaConfig.url.endsWith('/') ? wahaConfig.url.slice(0, -1) : wahaConfig.url;
             await fetch(`${baseUrl}/api/sessions/${wahaConfig.session}/logout`, {
                 method: 'POST',
                 headers: wahaConfig.apiKey ? { 'X-Api-Key': wahaConfig.apiKey } : {}
