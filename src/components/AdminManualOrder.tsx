@@ -36,6 +36,12 @@ export const AdminManualOrder: React.FC<AdminManualOrderProps> = ({ onBack, onSu
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showErrors, setShowErrors] = useState(false);
 
+    // Neighborhood Autocomplete states
+    const [neighborhoodSearch, setNeighborhoodSearch] = useState('');
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    const [suggestions, setSuggestions] = useState<any[]>([]);
+    const [isCustomNeighborhood, setIsCustomNeighborhood] = useState(false);
+
     // Filter Products
     const filteredProducts = useMemo(() => {
         return products.filter(p => {
@@ -53,11 +59,38 @@ export const AdminManualOrder: React.FC<AdminManualOrderProps> = ({ onBack, onSu
             const fee = deliveryFees.find(f => f.id === selectedNeighborhoodId);
             if (fee) {
                 setDeliveryFee(fee.fee);
+                setNeighborhoodSearch(fee.neighborhood);
             }
         } else if (deliveryMethod === 'PICKUP') {
             setDeliveryFee(0);
         }
     }, [selectedNeighborhoodId, deliveryMethod, deliveryFees]);
+
+    const handleNeighborhoodChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setNeighborhoodSearch(value);
+        setIsCustomNeighborhood(false);
+
+        if (value.trim()) {
+            const matches = deliveryFees.filter(df =>
+                df.is_active &&
+                df.neighborhood.toLowerCase().includes(value.toLowerCase())
+            );
+            setSuggestions(matches);
+            setShowSuggestions(true);
+        } else {
+            setSuggestions(deliveryFees.filter(df => df.is_active));
+            setShowSuggestions(true);
+        }
+    };
+
+    const selectSuggestion = (s: any) => {
+        setNeighborhoodSearch(s.neighborhood);
+        setSelectedNeighborhoodId(s.id);
+        setDeliveryFee(s.fee);
+        setShowSuggestions(false);
+        setIsCustomNeighborhood(false);
+    };
 
     const addToCart = (product: Product) => {
         setCart(prev => {
@@ -116,7 +149,7 @@ export const AdminManualOrder: React.FC<AdminManualOrderProps> = ({ onBack, onSu
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (cart.length === 0 || !customerName || !customerPhone || (deliveryMethod === 'DELIVERY' && (!address || !selectedNeighborhoodId))) {
+        if (cart.length === 0 || !customerName || !customerPhone || (deliveryMethod === 'DELIVERY' && (!address || (!selectedNeighborhoodId && !isCustomNeighborhood)))) {
             setShowErrors(true);
             return;
         }
@@ -128,7 +161,9 @@ export const AdminManualOrder: React.FC<AdminManualOrderProps> = ({ onBack, onSu
             let finalAddress = deliveryMethod === 'DELIVERY' ? address : 'Retirada no Balcão';
 
             if (deliveryMethod === 'DELIVERY') {
-                const neighborhoodName = deliveryFees.find(df => df.id === selectedNeighborhoodId)?.neighborhood || 'Bairro Personalizado';
+                const neighborhoodName = isCustomNeighborhood
+                    ? neighborhoodSearch
+                    : deliveryFees.find(df => df.id === selectedNeighborhoodId)?.neighborhood || neighborhoodSearch;
                 finalAddress += ` | ${neighborhoodName} (Taxa: R$ ${deliveryFee.toFixed(2).replace('.', ',')})`;
             }
 
@@ -389,34 +424,82 @@ export const AdminManualOrder: React.FC<AdminManualOrderProps> = ({ onBack, onSu
                                         {showErrors && !address && <p className="text-[10px] text-red-500 font-bold uppercase ml-1">Endereço é obrigatório</p>}
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-3">
+                                    <div className="grid grid-cols-1 gap-3">
                                         <div className="space-y-1">
-                                            <div className={`bg-slate-900 border ${showErrors && !selectedNeighborhoodId ? 'border-red-500 ring-4 ring-red-500/10' : 'border-slate-800'} rounded-xl px-3 py-2 text-balance`}>
-                                                <p className={`text-[9px] ${showErrors && !selectedNeighborhoodId ? 'text-red-400' : 'text-slate-500'} font-bold uppercase mb-1 ml-1`}>Bairro Ref.</p>
-                                                <select
-                                                    value={selectedNeighborhoodId}
-                                                    onChange={e => setSelectedNeighborhoodId(e.target.value)}
-                                                    className="w-full bg-transparent text-xs text-white outline-none border-none font-bold cursor-pointer"
-                                                >
-                                                    <option value="" className="bg-slate-900">Selecione...</option>
-                                                    {deliveryFees.map(fee => (
-                                                        <option key={fee.id} value={fee.id} className="bg-slate-900">
-                                                            {fee.neighborhood}
-                                                        </option>
-                                                    ))}
-                                                </select>
+                                            <div className={`bg-slate-900 border ${showErrors && !selectedNeighborhoodId && !isCustomNeighborhood ? 'border-red-500 ring-4 ring-red-500/10' : 'border-slate-800'} rounded-xl px-4 py-3 relative`}>
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <MapPin size={12} className={showErrors && !selectedNeighborhoodId && !isCustomNeighborhood ? 'text-red-400' : 'text-slate-500'} />
+                                                    <label className={`text-[10px] font-bold ${showErrors && !selectedNeighborhoodId && !isCustomNeighborhood ? 'text-red-400' : 'text-slate-500'} uppercase tracking-wider`}>Bairro Ref. *</label>
+                                                </div>
+
+                                                <input
+                                                    type="text"
+                                                    value={neighborhoodSearch}
+                                                    onChange={handleNeighborhoodChange}
+                                                    onFocus={() => {
+                                                        setSuggestions(deliveryFees.filter(df => df.is_active));
+                                                        setShowSuggestions(true);
+                                                    }}
+                                                    placeholder="Digite para buscar o bairro..."
+                                                    className="w-full bg-transparent text-sm font-bold text-white outline-none border-none placeholder:text-slate-700"
+                                                    autoComplete="off"
+                                                />
+
+                                                {/* Suggestions List */}
+                                                {showSuggestions && suggestions.length > 0 && (
+                                                    <div className="absolute z-[110] top-[calc(100%+8px)] left-0 right-0 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl shadow-black overflow-hidden max-h-60 overflow-y-auto animate-in fade-in slide-in-from-top-2">
+                                                        {suggestions.map(s => (
+                                                            <button
+                                                                key={s.id}
+                                                                onClick={() => selectSuggestion(s)}
+                                                                className="w-full text-left px-4 py-3 hover:bg-slate-800 transition-colors border-b border-slate-800/50 last:border-0 flex justify-between items-center group"
+                                                            >
+                                                                <span className="font-bold text-slate-200 text-sm">{s.neighborhood}</span>
+                                                                <span className="text-xs font-black text-orange-500 bg-orange-500/10 px-2 py-1 rounded-lg">
+                                                                    {s.fee > 0 ? `+ R$ ${s.fee.toFixed(2).replace('.', ',')}` : 'Grátis'}
+                                                                </span>
+                                                            </button>
+                                                        ))}
+
+                                                        <button
+                                                            onClick={() => {
+                                                                setIsCustomNeighborhood(true);
+                                                                setSelectedNeighborhoodId('');
+                                                                setShowSuggestions(false);
+                                                                if (!neighborhoodSearch) setNeighborhoodSearch('Outro Bairro');
+                                                            }}
+                                                            className="w-full text-left px-4 py-4 bg-slate-800/50 hover:bg-orange-500/10 transition-colors flex flex-col gap-0.5"
+                                                        >
+                                                            <span className="font-black text-orange-500 text-[9px] uppercase tracking-widest">Não encontrou o bairro?</span>
+                                                            <span className="font-bold text-slate-200 text-sm">Outro / Bairro não listado</span>
+                                                        </button>
+                                                    </div>
+                                                )}
+
+                                                {/* Backdrop to close suggestions */}
+                                                {showSuggestions && (
+                                                    <div className="fixed inset-0 z-[105] bg-transparent" onClick={() => setShowSuggestions(false)} />
+                                                )}
                                             </div>
-                                            {showErrors && !selectedNeighborhoodId && <p className="text-[9px] text-red-500 font-black uppercase ml-1">Selecione o Bairro</p>}
+                                            {showErrors && !selectedNeighborhoodId && !isCustomNeighborhood && <p className="text-[10px] text-red-500 font-bold uppercase ml-1">Selecione um bairro</p>}
                                         </div>
-                                        <div className="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2">
-                                            <p className="text-[9px] text-slate-500 font-bold uppercase mb-1 ml-1">Taxa Entrega</p>
+
+                                        <div className="bg-slate-900 border border-slate-800 rounded-xl px-4 py-3">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <Bike size={12} className="text-slate-500" />
+                                                <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Taxa de Entrega (R$)</label>
+                                            </div>
                                             <div className="flex items-center gap-1">
-                                                <span className="text-xs text-orange-500 font-bold">R$</span>
+                                                <span className="text-sm text-orange-500 font-bold">R$</span>
                                                 <input
                                                     type="number"
                                                     value={deliveryFee}
-                                                    onChange={e => setDeliveryFee(parseFloat(e.target.value) || 0)}
-                                                    className="w-full bg-transparent text-sm font-bold text-white outline-none"
+                                                    onChange={e => {
+                                                        setDeliveryFee(parseFloat(e.target.value) || 0);
+                                                        setIsCustomNeighborhood(true);
+                                                        setSelectedNeighborhoodId('');
+                                                    }}
+                                                    className="w-full bg-transparent text-sm font-black text-white outline-none"
                                                 />
                                             </div>
                                         </div>
