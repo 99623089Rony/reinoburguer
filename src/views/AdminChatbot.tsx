@@ -44,6 +44,7 @@ export default function AdminChatbot() {
     const [activeTab, setActiveTab] = useState<'dashboard' | 'conversations' | 'rules' | 'integration' | 'analytics'>('dashboard');
     const [config, setConfig] = useState<ChatbotConfig | null>(null);
     const [wahaConfig, setWahaConfig] = useState({ url: '', session: 'default', apiKey: '', status: 'DISCONNECTED' });
+    const [storeId, setStoreId] = useState<string | null>(null);
     const [qrCode, setQrCode] = useState<string | null>(null);
     const [isRefreshingQr, setIsRefreshingQr] = useState(false);
     const [conversations, setConversations] = useState<ChatbotConversation[]>([]);
@@ -101,10 +102,11 @@ export default function AdminChatbot() {
     const loadWahaConfig = async () => {
         const { data } = await supabase
             .from('store_config')
-            .select('waha_url, waha_session, waha_api_key')
+            .select('id, waha_url, waha_session, waha_api_key')
             .single();
 
         if (data) {
+            setStoreId(data.id);
             setWahaConfig({
                 url: data.waha_url || '',
                 session: data.waha_session || 'default',
@@ -216,6 +218,11 @@ export default function AdminChatbot() {
     };
 
     const saveWahaConfig = async () => {
+        if (!storeId) {
+            alert('Erro: ID da loja não encontrado.');
+            return;
+        }
+
         const { error } = await supabase
             .from('store_config')
             .update({
@@ -223,13 +230,14 @@ export default function AdminChatbot() {
                 waha_session: wahaConfig.session,
                 waha_api_key: wahaConfig.apiKey
             })
-            .eq('id', (config as any)?.storeId || 1);
+            .eq('id', storeId);
 
         if (!error) {
             alert('Configuração salva com sucesso!');
             checkStatus();
         } else {
-            alert('Erro ao salvar configuração.');
+            console.error('Error saving WAHA config:', error);
+            alert('Erro ao salvar configuração: ' + error.message);
         }
     };
 
