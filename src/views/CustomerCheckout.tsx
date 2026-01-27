@@ -159,11 +159,11 @@ export const CustomerCheckout: React.FC<{
   const currentDeliveryFee = orderType === 'pickup' ? 0 : (selectedFee ?? 0);
   const discount = appliedCoupon?.reward?.discountValue || 0;
 
-  // Calculate Card Fees using Reverse Calculation (Final = Base / (1 - percent/100))
+  // Calculate Card Fees using Precise Reverse Calculation (Ton Simulator logic)
   const calculateReverseFee = (base: number, percent: number) => {
-    if (percent <= 0) return 0;
-    if (percent >= 100) return 0; // Avoid division by zero
-    const finalTotal = base / (1 - percent / 100);
+    if (percent <= 0 || percent >= 100) return 0;
+    // Ton uses floor to match their "Should charge" values exactly
+    const finalTotal = Math.floor((base / (1 - percent / 100)) * 100) / 100;
     return Math.max(0, finalTotal - base);
   };
 

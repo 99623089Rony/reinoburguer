@@ -94,7 +94,9 @@ export const AdminManualOrder: React.FC<AdminManualOrderProps> = ({ onBack, onSu
 
         const calculateReverseFee = (base: number, percent: number) => {
             if (percent <= 0 || percent >= 100) return 0;
-            return (base / (1 - percent / 100)) - base;
+            // Matches Ton simulator precision (floor)
+            const finalTotal = Math.floor((base / (1 - percent / 100)) * 100) / 100;
+            return finalTotal - base;
         };
 
         const method = paymentMethod.toLowerCase();
