@@ -242,6 +242,7 @@ export default function AdminChatbot() {
     };
 
     const callWahaProxy = async (method: string, path: string, payload?: any) => {
+        console.log(`[Proxy] Requesting ${method} ${path}`);
         const { data, error } = await supabase.functions.invoke('whatsapp-webhook', {
             body: {
                 event: 'proxy',
@@ -252,16 +253,43 @@ export default function AdminChatbot() {
         });
 
         if (error) {
-            console.error('Proxy error:', error);
+            console.error('Proxy error response:', error);
             throw error;
         }
         return data;
+    };
+
+    const checkBridge = async () => {
+        console.log('Testing Bridge Ping...');
+        try {
+            const { data, error } = await supabase.functions.invoke('whatsapp-webhook', {
+                body: { event: 'ping' }
+            });
+            if (error) {
+                console.error('Bridge Ping Failed:', error);
+                return false;
+            }
+            console.log('Bridge Ping OK:', data);
+            return true;
+        } catch (err) {
+            console.error('Bridge connection crash:', err);
+            return false;
+        }
     };
 
     const checkStatus = async () => {
         if (!storeId) return;
 
         try {
+            // First time or every 5 checks, test the bridge itself
+            if (Math.random() > 0.8) {
+                const bridgeOk = await checkBridge();
+                if (!bridgeOk) {
+                    setWahaConfig(prev => ({ ...prev, status: 'BRIDGE_OFFLINE' }));
+                    return;
+                }
+            }
+
             const data = await callWahaProxy('GET', `/api/sessions/${wahaConfig.session}`);
 
             if (data && data.status) {
@@ -272,16 +300,11 @@ export default function AdminChatbot() {
                     setQrCode(null);
                 }
             } else {
-                // If data is null or doesn't have status, it might be 404
                 setWahaConfig(prev => ({ ...prev, status: 'DISCONNECTED' }));
             }
         } catch (err: any) {
-            if (err.message?.includes('401')) {
-                setWahaConfig(prev => ({ ...prev, status: 'UNAUTHORIZED' }));
-            } else {
-                console.error('Error checking WAHA status:', err);
-                setWahaConfig(prev => ({ ...prev, status: 'OFFLINE' }));
-            }
+            console.error('Error checking WAHA status:', err);
+            setWahaConfig(prev => ({ ...prev, status: 'OFFLINE' }));
         }
     };
 
