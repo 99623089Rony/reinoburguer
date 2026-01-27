@@ -7,7 +7,7 @@ const corsHeaders = {
     "Access-Control-Allow-Methods": "POST, GET, OPTIONS, PUT, DELETE",
 };
 
-serve(async (req) => {
+serve(async (req: Request) => {
     // Handle CORS preflight
     if (req.method === "OPTIONS") {
         return new Response("ok", { headers: corsHeaders });
@@ -57,7 +57,7 @@ serve(async (req) => {
                         signal: AbortSignal.timeout(5000)
                     });
                     wahaHealth = healthRes.ok ? "online" : `error_${healthRes.status}`;
-                } catch (e) {
+                } catch (e: any) {
                     wahaHealth = `offline_${e.message}`;
                 }
             }
@@ -121,7 +121,7 @@ serve(async (req) => {
                     status: wahaRes.status,
                     headers: { ...corsHeaders, "Content-Type": "application/json" }
                 });
-            } catch (err) {
+            } catch (err: any) {
                 console.error(`[WAHA-BRIDGE] Fetch Error: ${err.message}`);
                 return new Response(JSON.stringify({ error: "WAHA connection failed", details: err.message }), {
                     status: 504,
@@ -132,11 +132,6 @@ serve(async (req) => {
 
         // 3. Handle Webhook (WAHA events)
         if (body.event === "message") {
-            if (!storeConfig.is_active) {
-                console.log("[WAHA-BRIDGE] Store inactive, skipping.");
-                return new Response("skipped", { headers: corsHeaders });
-            }
-
             const payload = body.payload;
             if (!payload || !payload.from || !payload.body) {
                 console.log("[WAHA-BRIDGE] Invalid message payload.");
@@ -157,7 +152,7 @@ serve(async (req) => {
 
         return new Response(JSON.stringify({ status: "ignored", event: body.event }), { headers: corsHeaders });
 
-    } catch (error) {
+    } catch (error: any) {
         console.error("[WAHA-BRIDGE] CRITICAL ERROR:", error.message);
         return new Response(JSON.stringify({ error: error.message }), {
             status: 500,
@@ -210,17 +205,27 @@ async function processBotLogic(supabase: any, phone: string, text: string, name?
         let response = "";
 
         if (!context.currentStep || lowerText === "oi" || lowerText === "ola" || lowerText === "menu") {
-            response = (botConfig.welcome_message || "Olá! Como posso ajudar?") + "\n\n1️⃣ Fazer Pedido\n2️⃣ Ver Horários\n8️⃣ Falar com Humano";
+            const welcome = botConfig.welcome_message || "Olá! Como posso ajudar?";
+            const options = botConfig.menu_options || [];
+            const menuText = options.map((o: any) => `${o.number}️⃣ ${o.label}`).join('\n');
+
+            response = `${welcome}\n\n${menuText}`;
             context.currentStep = "main_menu";
         } else if (context.currentStep === "main_menu") {
             const opt = text.trim();
-            if (opt === "1") {
-                response = "Em breve aqui você verá nosso cardápio! 🍔";
-            } else if (opt === "8") {
-                await supabase.from("chatbot_conversations").update({ status: "waiting_agent" }).eq("id", conversation.id);
-                response = "Chamando um atendente... 😊";
+            const option = (botConfig.menu_options || []).find((o: any) => o.number.toString() === opt);
+
+            if (option) {
+                if (option.action === "request_agent") {
+                    await supabase.from("chatbot_conversations").update({ status: "waiting_agent" }).eq("id", conversation.id);
+                    response = "Chamando um atendente... 😊";
+                } else if (option.action === "start_order") {
+                    response = "Ótimo! Para fazer seu pedido, você pode acessar nosso cardápio online aqui: [LINK]";
+                } else {
+                    response = `Você escolheu: ${option.label}. Em breve terei mais informações sobre isso!`;
+                }
             } else {
-                response = "Desculpe, não entendi. Digite 1 ou 8!";
+                response = "Desculpe, não entendi. Escolha uma das opções do menu acima!";
             }
         }
 
@@ -228,7 +233,7 @@ async function processBotLogic(supabase: any, phone: string, text: string, name?
         await saveBotMessage(supabase, conversation.id, response);
         return response;
 
-    } catch (e) {
+    } catch (e: any) {
         console.error("[WAHA-BRIDGE] Logic Error:", e.message);
         return "";
     }
@@ -237,7 +242,7 @@ async function processBotLogic(supabase: any, phone: string, text: string, name?
 async function saveBotMessage(supabase: any, convId: string, text: string) {
     try {
         await supabase.from("chatbot_messages").insert([{ conversation_id: convId, sender_type: "bot", message_text: text }]);
-    } catch (e) { console.error(e); }
+    } catch (e: any) { console.error(e); }
 }
 
 async function sendWahaMessage(config: any, to: string, text: string) {
@@ -252,7 +257,7 @@ async function sendWahaMessage(config: any, to: string, text: string) {
             body: JSON.stringify({ chatId: to, text: text, session: config.waha_session || "default" })
         });
         if (!res.ok) console.error("[WAHA-BRIDGE] Send Error:", await res.text());
-    } catch (e) {
+    } catch (e: any) {
         console.error("[WAHA-BRIDGE] Connection Error:", e.message);
     }
 }
