@@ -263,6 +263,10 @@ export default function AdminChatbot() {
             });
 
             if (!response.ok) {
+                if (response.status === 401) {
+                    setWahaConfig(prev => ({ ...prev, status: 'UNAUTHORIZED' }));
+                    return;
+                }
                 // If 404, session might not exist yet, which is fine
                 if (response.status === 404) {
                     setWahaConfig(prev => ({ ...prev, status: 'DISCONNECTED' }));
@@ -847,10 +851,16 @@ export default function AdminChatbot() {
                                             </div>
                                             <div>
                                                 <h3 className="text-lg font-black text-white">
-                                                    Status: {wahaConfig.status === 'OFFLINE' ? 'Servidor Offline' : 'Aguardando QR Code'}
+                                                    Status: {
+                                                        wahaConfig.status === 'OFFLINE' ? 'Servidor Offline' :
+                                                            wahaConfig.status === 'UNAUTHORIZED' ? 'Chave API Incorreta' :
+                                                                'Aguardando QR Code'
+                                                    }
                                                 </h3>
                                                 <p className="text-slate-500 text-sm mt-1 italic">
-                                                    No WhatsApp: Aparelhos Conectados &gt; Conectar um Aparelho
+                                                    {wahaConfig.status === 'UNAUTHORIZED'
+                                                        ? 'Defina a mesma Chave API no Koyeb e aqui.'
+                                                        : 'No WhatsApp: Aparelhos Conectados > Conectar um Aparelho'}
                                                 </p>
                                             </div>
                                             <div className="flex gap-3 justify-center">
