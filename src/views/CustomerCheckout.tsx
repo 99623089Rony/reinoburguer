@@ -159,12 +159,21 @@ export const CustomerCheckout: React.FC<{
   const currentDeliveryFee = orderType === 'pickup' ? 0 : (selectedFee ?? 0);
   const discount = appliedCoupon?.reward?.discountValue || 0;
 
-  // Calculate Card Fees (Include delivery fee in base)
-  const cardDebitFee = paymentMethod === 'Débito' ? (subtotal - discount + currentDeliveryFee) * ((storeConfig?.cardDebitFeePercent || 0) / 100) : 0;
-  const cardCreditFee = paymentMethod === 'Crédito' ? (subtotal - discount + currentDeliveryFee) * ((storeConfig?.cardCreditFeePercent || 0) / 100) : 0;
-  const pixFee = (paymentMethod === 'Pix' || paymentMethod === 'pix') ? (subtotal - discount + currentDeliveryFee) * ((storeConfig?.pixFeePercent || 0) / 100) : 0;
+  // Calculate Card Fees using Reverse Calculation (Final = Base / (1 - percent/100))
+  const calculateReverseFee = (base: number, percent: number) => {
+    if (percent <= 0) return 0;
+    if (percent >= 100) return 0; // Avoid division by zero
+    const finalTotal = base / (1 - percent / 100);
+    return Math.max(0, finalTotal - base);
+  };
 
-  const total = Math.round(Math.max(0, subtotal + currentDeliveryFee - discount + cardDebitFee + cardCreditFee + pixFee) * 100) / 100;
+  const baseForFee = Math.max(0, subtotal - discount + currentDeliveryFee);
+
+  const cardDebitFee = paymentMethod === 'Débito' ? calculateReverseFee(baseForFee, storeConfig?.cardDebitFeePercent || 0) : 0;
+  const cardCreditFee = paymentMethod === 'Crédito' ? calculateReverseFee(baseForFee, storeConfig?.cardCreditFeePercent || 0) : 0;
+  const pixFee = (paymentMethod === 'Pix' || paymentMethod === 'pix') ? calculateReverseFee(baseForFee, storeConfig?.pixFeePercent || 0) : 0;
+
+  const total = Math.round((baseForFee + cardDebitFee + cardCreditFee + pixFee) * 100) / 100;
 
   // Block access if store is closed
   if (!isStoreOpen) {

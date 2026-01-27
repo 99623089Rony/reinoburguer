@@ -89,19 +89,23 @@ export const AdminManualOrder: React.FC<AdminManualOrderProps> = ({ onBack, onSu
 
     const cardFee = useMemo(() => {
         if (!storeConfig) return 0;
-        // Logic should match CustomerCheckout.tsx: (subtotal + deliveryFee) * percent
         const currentDeliveryFee = deliveryMethod === 'DELIVERY' ? deliveryFee : 0;
         const baseForFee = cartSubtotal + currentDeliveryFee;
 
+        const calculateReverseFee = (base: number, percent: number) => {
+            if (percent <= 0 || percent >= 100) return 0;
+            return (base / (1 - percent / 100)) - base;
+        };
+
         const method = paymentMethod.toLowerCase();
         if (method.includes('crédito')) {
-            return baseForFee * ((storeConfig.cardCreditFeePercent || 0) / 100);
+            return calculateReverseFee(baseForFee, storeConfig.cardCreditFeePercent || 0);
         }
         if (method.includes('débito')) {
-            return baseForFee * ((storeConfig.cardDebitFeePercent || 0) / 100);
+            return calculateReverseFee(baseForFee, storeConfig.cardDebitFeePercent || 0);
         }
         if (method.includes('pix')) {
-            return baseForFee * ((storeConfig.pixFeePercent || 0) / 100);
+            return calculateReverseFee(baseForFee, storeConfig.pixFeePercent || 0);
         }
         return 0;
     }, [paymentMethod, cartSubtotal, deliveryFee, deliveryMethod, storeConfig]);
@@ -131,7 +135,14 @@ export const AdminManualOrder: React.FC<AdminManualOrderProps> = ({ onBack, onSu
             }
 
             if (cardFee > 0) {
-                finalAddress += ` | Taxa Maquininha: R$ ${cardFee.toFixed(2).replace('.', ',')}`;
+                const methodLabel = (() => {
+                    const m = paymentMethod.toLowerCase();
+                    if (m.includes('pix')) return 'Taxa PIX';
+                    if (m.includes('crédito')) return 'Taxa Crédito';
+                    if (m.includes('débito')) return 'Taxa Débito';
+                    return 'Taxa Maquininha';
+                })();
+                finalAddress += ` | ${methodLabel}: R$ ${cardFee.toFixed(2).replace('.', ',')}`;
             }
 
             if (paymentMethod === 'Dinheiro' && changeAmount) {
@@ -483,7 +494,15 @@ export const AdminManualOrder: React.FC<AdminManualOrderProps> = ({ onBack, onSu
                             )}
                             {cardFee > 0 && (
                                 <div className="flex justify-between items-center text-xs text-blue-400 font-bold">
-                                    <span>Taxa Maquininha</span>
+                                    <span>
+                                        {(() => {
+                                            const m = paymentMethod.toLowerCase();
+                                            if (m.includes('pix')) return 'Taxa PIX';
+                                            if (m.includes('crédito')) return 'Taxa Crédito';
+                                            if (m.includes('débito')) return 'Taxa Débito';
+                                            return 'Taxa Maquininha';
+                                        })()}
+                                    </span>
                                     <span>+ R$ {cardFee.toFixed(2).replace('.', ',')}</span>
                                 </div>
                             )}
