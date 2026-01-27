@@ -11,49 +11,85 @@ serve(async (req) => {
         return new Response("ok", { headers: corsHeaders });
     }
 
+    console.log(`[Webhook] Request received: ${req.method} ${req.url}`);
+
     try {
+        const url = new URL(req.url);
         const supabase = createClient(
             Deno.env.get("SUPABASE_URL") ?? "",
             Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
         );
 
-        const body = await req.json();
-        console.log("Webhook received:", JSON.stringify(body));
+        // Safely parse body
+        let body: any;
+        try {
+            const text = await req.text();
+            if (!text) {
+                console.log("[Webhook] Empty body received");
+                return new Response(JSON.stringify({ error: "Empty body" }), { status: 400, headers: corsHeaders });
+            }
+            body = JSON.parse(text);
+            console.log("[Webhook] Parsed Body Event:", body.event);
+        } catch (e) {
+            console.error("[Webhook] JSON parse error:", e.message);
+            return new Response(JSON.stringify({ error: "Invalid JSON", details: e.message }), { status: 400, headers: corsHeaders });
+        }
 
-        // 1. Get Store Config for WAHA credentials (needed for both proxy and message)
-        const { data: storeConfig } = await supabase
+        // 1. Get Store Config
+        console.log("[Webhook] Fetching store_config...");
+        const { data: storeConfig, error: storeError } = await supabase
             .from("store_config")
             .select("waha_url, waha_session, waha_api_key, is_active")
             .single();
 
+        if (storeError) {
+            console.error("[Webhook] DB Error fetching store_config:", storeError);
+            return new Response(JSON.stringify({ error: "Database error", details: storeError }), { status: 500, headers: corsHeaders });
+        }
+
+        if (!storeConfig) {
+            console.error("[Webhook] store_config row not found");
+            return new Response(JSON.stringify({ error: "Store not configured" }), { status: 500, headers: corsHeaders });
+        }
+
         // Handle Proxy request from Admin Panel
         if (body.event === "proxy") {
-            if (!storeConfig?.waha_url) {
-                return new Response(JSON.stringify({ error: "WAHA not configured" }), { status: 400, headers: corsHeaders });
+            console.log("[Webhook] Handling Proxy event...");
+            if (!storeConfig.waha_url) {
+                console.error("[Webhook] waha_url is missing in store_config");
+                return new Response(JSON.stringify({ error: "WAHA URL not in database" }), { status: 400, headers: corsHeaders });
             }
 
             const wahaUrl = storeConfig.waha_url.endsWith('/') ? storeConfig.waha_url.slice(0, -1) : storeConfig.waha_url;
             const targetUrl = `${wahaUrl}${body.path}`;
-            console.log(`Proxying ${body.method} request to ${targetUrl}`);
+            console.log(`[Webhook] Proxying ${body.method || "GET"} to ${targetUrl}`);
 
             try {
+                // Set a timeout for the fetch
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+
                 const wahaResponse = await fetch(targetUrl, {
                     method: body.method || "GET",
                     headers: {
                         "Content-Type": "application/json",
                         ...(storeConfig.waha_api_key ? { "X-Api-Key": storeConfig.waha_api_key } : {})
                     },
-                    body: body.method !== "GET" ? JSON.stringify(body.payload) : undefined
+                    body: (body.method && body.method !== "GET") ? JSON.stringify(body.payload) : undefined,
+                    signal: controller.signal
                 });
+                clearTimeout(timeoutId);
 
-                const isImage = wahaResponse.headers.get("content-type")?.includes("image/");
+                console.log(`[Webhook] WAHA Response status: ${wahaResponse.status}`);
+                const contentType = wahaResponse.headers.get("content-type") || "";
 
-                if (isImage) {
+                if (contentType.includes("image/")) {
+                    console.log("[Webhook] Proxying image binary data");
                     const blob = await wahaResponse.blob();
                     return new Response(blob, {
                         headers: {
                             ...corsHeaders,
-                            "Content-Type": wahaResponse.headers.get("content-type") || "image/png"
+                            "Content-Type": contentType
                         }
                     });
                 }
@@ -64,12 +100,13 @@ serve(async (req) => {
                     headers: { ...corsHeaders, "Content-Type": "application/json" }
                 });
             } catch (e) {
-                console.error(`Proxy failure for ${targetUrl}:`, e);
+                console.error(`[Webhook] Proxy EXCEPTION for ${targetUrl}:`, e.message);
+                const isTimeout = e.name === 'AbortError';
                 return new Response(JSON.stringify({
-                    error: "Proxy request failed",
+                    error: isTimeout ? "WAHA Timeout" : "Proxy failed",
                     details: e.message,
                     target: targetUrl
-                }), { status: 500, headers: corsHeaders });
+                }), { status: 504, headers: corsHeaders });
             }
         }
 

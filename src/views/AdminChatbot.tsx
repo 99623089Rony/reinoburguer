@@ -293,11 +293,15 @@ export default function AdminChatbot() {
         try {
             // We use standard fetch for binary/blob because invoke might try to parse it
             const { data: { session } } = await supabase.auth.getSession();
-            const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://saikxbildeupefudrrhl.supabase.co'}/functions/v1/whatsapp-webhook`, {
+            const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://saikxbildeupefudrrhl.supabase.co';
+            const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+            const response = await fetch(`${supabaseUrl}/functions/v1/whatsapp-webhook`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${session?.access_token}`
+                    'Authorization': `Bearer ${session?.access_token}`,
+                    'apikey': supabaseAnonKey
                 },
                 body: JSON.stringify({
                     event: 'proxy',
