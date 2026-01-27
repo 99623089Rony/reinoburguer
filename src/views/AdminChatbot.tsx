@@ -318,17 +318,24 @@ export default function AdminChatbot() {
                 return;
             }
 
-            const data = await callWahaProxy('GET', `/api/sessions/${wahaConfig.session}`);
+            // Tenta obter o status da sessão
+            try {
+                const data = await callWahaProxy('GET', `/api/sessions/${wahaConfig.session}`);
 
-            if (data && data.status) {
-                setWahaConfig(prev => ({ ...prev, status: data.status }));
-                if (data.status === 'SCAN_QR_CODE') {
-                    fetchQrCode();
+                if (data && data.status) {
+                    setWahaConfig(prev => ({ ...prev, status: data.status }));
+                    if (data.status === 'SCAN_QR_CODE') {
+                        fetchQrCode();
+                    } else {
+                        setQrCode(null);
+                    }
                 } else {
-                    setQrCode(null);
+                    setWahaConfig(prev => ({ ...prev, status: 'STOPPED' }));
                 }
-            } else {
-                setWahaConfig(prev => ({ ...prev, status: 'DISCONNECTED' }));
+            } catch (sessionError: any) {
+                // Se a sessão não existe (404), marca como STOPPED
+                console.log('Session not found or error:', sessionError);
+                setWahaConfig(prev => ({ ...prev, status: 'STOPPED' }));
             }
         } catch (err: any) {
             console.error('Error checking WAHA status:', err);
@@ -376,9 +383,38 @@ export default function AdminChatbot() {
 
     const startSession = async () => {
         if (!storeId) return;
-
         console.log('Starting session via Proxy...');
         try {
+            // Primeiro, tenta obter a sessão para ver se ela existe
+            try {
+                const sessionData = await callWahaProxy('GET', `/api/sessions/${wahaConfig.session}`);
+                console.log('Session exists:', sessionData);
+            } catch (getError: any) {
+                // Se a sessão não existe (404), cria ela primeiro
+                console.log('Session not found, creating it...');
+                try {
+                    await callWahaProxy('POST', `/api/sessions`, {
+                        name: wahaConfig.session,
+                        config: {
+                            proxy: null,
+                            noweb: {
+                                store: {
+                                    enabled: true,
+                                    fullSync: false
+                                }
+                            }
+                        }
+                    });
+                    console.log('Session created successfully!');
+                    // Aguarda um pouco para a sessão ser criada
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                } catch (createError: any) {
+                    console.error('Error creating session:', createError);
+                    throw new Error('Não foi possível criar a sessão: ' + createError.message);
+                }
+            }
+
+            // Agora inicia a sessão
             await callWahaProxy('POST', `/api/sessions/${wahaConfig.session}/start`);
             console.log('Session start command sent!');
             setTimeout(checkStatus, 3000);
@@ -909,8 +945,9 @@ export default function AdminChatbot() {
                                                         wahaConfig.status === 'OFFLINE' ? 'Servidor WAHA Offline (Koyeb)' :
                                                             wahaConfig.status === 'BRIDGE_OFFLINE' ? 'Ponte Supabase Desconectada' :
                                                                 wahaConfig.status === 'CHECKING' ? 'Verificando Conexão...' :
-                                                                    wahaConfig.status === 'UNAUTHORIZED' ? 'Chave API Incorreta' :
-                                                                        'Aguardando QR Code'
+                                                                    wahaConfig.status === 'STOPPED' ? 'Sessão Parada - Clique em Iniciar' :
+                                                                        wahaConfig.status === 'UNAUTHORIZED' ? 'Chave API Incorreta' :
+                                                                            'Aguardando QR Code'
                                                     }
                                                 </h3>
                                                 <p className="text-slate-500 text-sm mt-1 italic">
