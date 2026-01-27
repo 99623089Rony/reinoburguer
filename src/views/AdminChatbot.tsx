@@ -1038,11 +1038,11 @@ export default function AdminChatbot() {
                             </h3>
                             <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 flex items-center justify-between group">
                                 <code className="text-emerald-500 text-xs overflow-hidden text-ellipsis whitespace-nowrap">
-                                    {`https://saikxbildeupefudrrhl.supabase.co/functions/v1/whatsapp-webhook`}
+                                    {`https://saikxbildeupefudrrhl.supabase.co/functions/v1/whatsapp-webhook-v2`}
                                 </code>
                                 <button
                                     onClick={() => {
-                                        navigator.clipboard.writeText(`https://saikxbildeupefudrrhl.supabase.co/functions/v1/whatsapp-webhook`);
+                                        navigator.clipboard.writeText(`https://saikxbildeupefudrrhl.supabase.co/functions/v1/whatsapp-webhook-v2`);
                                         alert('Copiado!');
                                     }}
                                     className="flex items-center gap-2 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-400 hover:text-white transition-all text-[10px] font-black uppercase"
