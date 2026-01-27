@@ -265,23 +265,24 @@ export default function AdminChatbot() {
             if (!response.ok) {
                 if (response.status === 401) {
                     setWahaConfig(prev => ({ ...prev, status: 'UNAUTHORIZED' }));
-                    return;
-                }
-                // If 404, session might not exist yet, which is fine
-                if (response.status === 404) {
+                } else if (response.status === 404) {
                     setWahaConfig(prev => ({ ...prev, status: 'DISCONNECTED' }));
-                    return;
+                } else {
+                    setWahaConfig(prev => ({ ...prev, status: 'OFFLINE' }));
                 }
-                throw new Error('Server error: ' + response.status);
+                return;
             }
 
-            const data = await response.json();
-            if (data && data.status) {
-                setWahaConfig(prev => ({ ...prev, status: data.status }));
-                if (data.status === 'SCAN_QR_CODE') {
-                    fetchQrCode();
-                } else {
-                    setQrCode(null);
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.indexOf("application/json") !== -1) {
+                const data = await response.json();
+                if (data && data.status) {
+                    setWahaConfig(prev => ({ ...prev, status: data.status }));
+                    if (data.status === 'SCAN_QR_CODE') {
+                        fetchQrCode();
+                    } else {
+                        setQrCode(null);
+                    }
                 }
             }
         } catch (err) {
