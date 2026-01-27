@@ -71,24 +71,83 @@ export const AdminFinance: React.FC = () => {
         }, { delivery: 0, machine: 0, pix: 0 });
 
         const totalFees = feesBredowndown.delivery + feesBredowndown.machine + feesBredowndown.pix;
-        const netIncome = grossIncome - totalFees;
+
+        // Calculate COGS (Cost of Goods Sold) from filtered orders
+        const cogs = filteredOrders.reduce((acc, order) => {
+            const orderCost = order.items.reduce((itemAcc, item) => {
+                const costPrice = Number(item.costPrice) || 0;
+                const quantity = Number(item.quantity) || 0;
+                return itemAcc + (costPrice * quantity);
+            }, 0);
+            return acc + orderCost;
+        }, 0);
 
         const expenses = filteredTransactions.reduce((acc, t) => {
             return t.type === 'EXPENSE' ? acc + t.amount : acc;
         }, 0);
 
-        // Balance is Net - Expenses
+        // Net Income (after fees, before COGS and expenses)
+        const netIncome = grossIncome - totalFees;
+
+        // Net Profit (after COGS and expenses)
+        const netProfit = grossIncome - cogs - expenses;
+
+        // Cash Balance (after expenses and fees, but NOT COGS)
+        const cashBalance = grossIncome - expenses - totalFees;
+
+        // Balance is Net - Expenses (kept for backward compatibility)
         const balance = netIncome - expenses;
 
         return {
             grossIncome,
             netIncome,
+            netProfit,
+            cashBalance,
+            cogs,
             expenses,
             balance,
             fees: feesBredowndown,
             totalFees
         };
     }, [filteredTransactions, filteredOrders]);
+
+    // All-time summary (no date filter)
+    const allTimeSummary = useMemo(() => {
+        const allTimeIncome = transactions.reduce((acc, t) => {
+            return t.type === 'INCOME' ? acc + t.amount : acc;
+        }, 0);
+
+        const allTimeExpenses = transactions.reduce((acc, t) => {
+            return t.type === 'EXPENSE' ? acc + t.amount : acc;
+        }, 0);
+
+        // All-time fees
+        const allTimeFees = orders.filter(o => o.status === 'Finalizado').reduce((acc, o) => {
+            const delivery = Number(o.deliveryFee) || 0;
+            const cardFee = Number(o.cardFee) || 0;
+            return acc + delivery + cardFee;
+        }, 0);
+
+        // All-time COGS
+        const allTimeCogs = orders.filter(o => o.status === 'Finalizado').reduce((acc, order) => {
+            const orderCost = order.items.reduce((itemAcc, item) => {
+                const costPrice = Number(item.costPrice) || 0;
+                const quantity = Number(item.quantity) || 0;
+                return itemAcc + (costPrice * quantity);
+            }, 0);
+            return acc + orderCost;
+        }, 0);
+
+        const allTimeBalance = allTimeIncome - allTimeExpenses - allTimeFees;
+
+        return {
+            income: allTimeIncome,
+            expenses: allTimeExpenses,
+            fees: allTimeFees,
+            cogs: allTimeCogs,
+            balance: allTimeBalance
+        };
+    }, [transactions, orders]);
 
     const handleSave = async () => {
         if (!newTransaction.amount || !newTransaction.description) return alert('Preencha os campos obrigatórios');
@@ -199,95 +258,131 @@ export const AdminFinance: React.FC = () => {
             </header>
 
             {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {/* Gross Card */}
-                <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl space-y-4 relative overflow-hidden group">
-                    <div className="absolute right-0 top-0 p-32 bg-blue-500/5 rounded-full blur-3xl group-hover:bg-blue-500/10 transition-all" />
-                    <div className="flex items-center justify-between relative z-10">
-                        <div className="w-12 h-12 bg-slate-800 rounded-2xl flex items-center justify-center text-blue-500">
-                            <TrendingUp size={24} />
+            <div className="space-y-6">
+                {/* All-Time Balance - Prominent Card */}
+                <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-900/20 border-2 border-emerald-500/30 p-8 rounded-3xl relative overflow-hidden group shadow-2xl shadow-emerald-500/10">
+                    <div className="absolute right-0 top-0 p-40 bg-emerald-500/10 rounded-full blur-3xl group-hover:bg-emerald-500/20 transition-all" />
+                    <div className="relative z-10 space-y-4">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-14 h-14 bg-emerald-500/20 rounded-2xl flex items-center justify-center">
+                                    <Wallet size={28} className="text-emerald-400" />
+                                </div>
+                                <div>
+                                    <p className="text-xs font-black uppercase tracking-widest text-emerald-400">Saldo Geral do Caixa</p>
+                                    <p className="text-[10px] text-slate-500 font-medium">Acumulado Total (Sem Filtro)</p>
+                                </div>
+                            </div>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 bg-slate-950/50 px-3 py-1 rounded-full">LIVE</span>
                         </div>
-                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 bg-slate-950/50 px-3 py-1 rounded-full">Valor Bruto</span>
-                    </div>
-                    <div className="relative z-10">
-                        <p className="text-sm text-slate-400 font-bold mb-1">{getPeriodLabel()}</p>
-                        <h3 className="text-3xl font-black text-blue-400">
-                            R$ {summary.grossIncome.toFixed(2).replace('.', ',')}
-                        </h3>
+                        <h2 className={`text-5xl font-black ${allTimeSummary.balance >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                            R$ {allTimeSummary.balance.toFixed(2).replace('.', ',')}
+                        </h2>
+                        <div className="flex items-center gap-4 text-xs text-slate-400">
+                            <div className="flex items-center gap-1">
+                                <ArrowUpRight size={14} className="text-emerald-500" />
+                                <span>Entrada: R$ {allTimeSummary.income.toFixed(2).replace('.', ',')}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                                <ArrowDownRight size={14} className="text-rose-500" />
+                                <span>Saída: R$ {(allTimeSummary.expenses + allTimeSummary.fees).toFixed(2).replace('.', ',')}</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                {/* Fees Card */}
-                <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl space-y-4 hover:border-slate-700 transition-colors">
-                    <div className="flex items-center justify-between">
-                        <div className="w-10 h-10 bg-amber-500/10 rounded-xl flex items-center justify-center text-amber-500">
-                            <DollarSign size={20} />
+                {/* Period Metrics - 4 Cards Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {/* Gross Card */}
+                    <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl space-y-4 relative overflow-hidden group">
+                        <div className="absolute right-0 top-0 p-32 bg-blue-500/5 rounded-full blur-3xl group-hover:bg-blue-500/10 transition-all" />
+                        <div className="flex items-center justify-between relative z-10">
+                            <div className="w-12 h-12 bg-slate-800 rounded-2xl flex items-center justify-center text-blue-500">
+                                <TrendingUp size={24} />
+                            </div>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 bg-slate-950/50 px-3 py-1 rounded-full">Valor Bruto</span>
                         </div>
-                        <span className="text-[10px] font-bold text-amber-400 flex items-center gap-1">
-                            Taxas Totais
-                        </span>
-                    </div>
-                    <div className="space-y-1">
-                        <div className="flex justify-between text-[10px] text-slate-500">
-                            <span>Maquininha:</span>
-                            <span className="font-bold text-slate-400">R$ {summary.fees.machine.toFixed(2).replace('.', ',')}</span>
-                        </div>
-                        <div className="flex justify-between text-[10px] text-slate-500">
-                            <span>PIX:</span>
-                            <span className="font-bold text-slate-400">R$ {summary.fees.pix.toFixed(2).replace('.', ',')}</span>
-                        </div>
-                        <div className="flex justify-between text-[10px] text-slate-500">
-                            <span>Entrega:</span>
-                            <span className="font-bold text-slate-400">R$ {summary.fees.delivery.toFixed(2).replace('.', ',')}</span>
-                        </div>
-                        <div className="pt-2 border-t border-slate-800 flex justify-between">
-                            <span className="text-xs font-bold text-slate-400 uppercase">Total:</span>
-                            <h3 className="text-lg font-black text-amber-500">
-                                R$ {summary.totalFees.toFixed(2).replace('.', ',')}
+                        <div className="relative z-10">
+                            <p className="text-sm text-slate-400 font-bold mb-1">{getPeriodLabel()}</p>
+                            <h3 className="text-3xl font-black text-blue-400">
+                                R$ {summary.grossIncome.toFixed(2).replace('.', ',')}
                             </h3>
                         </div>
                     </div>
-                </div>
 
-                {/* Net Card */}
-                <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl space-y-4 relative overflow-hidden group">
-                    <div className="absolute right-0 top-0 p-32 bg-emerald-500/5 rounded-full blur-3xl group-hover:bg-emerald-500/10 transition-all" />
-                    <div className="flex items-center justify-between relative z-10">
-                        <div className="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center text-emerald-500">
-                            <TrendingUp size={20} />
+                    {/* Fees Card */}
+                    <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl space-y-4 hover:border-slate-700 transition-colors">
+                        <div className="flex items-center justify-between">
+                            <div className="w-10 h-10 bg-amber-500/10 rounded-xl flex items-center justify-center text-amber-500">
+                                <DollarSign size={20} />
+                            </div>
+                            <span className="text-[10px] font-bold text-amber-400 flex items-center gap-1">
+                                Taxas Totais
+                            </span>
                         </div>
-                        <span className="text-[10px] font-bold text-emerald-400 flex items-center gap-1">
-                            {getPeriodLabel()}
-                        </span>
+                        <div className="space-y-1">
+                            <div className="flex justify-between text-[10px] text-slate-500">
+                                <span>Maquininha:</span>
+                                <span className="font-bold text-slate-400">R$ {summary.fees.machine.toFixed(2).replace('.', ',')}</span>
+                            </div>
+                            <div className="flex justify-between text-[10px] text-slate-500">
+                                <span>PIX:</span>
+                                <span className="font-bold text-slate-400">R$ {summary.fees.pix.toFixed(2).replace('.', ',')}</span>
+                            </div>
+                            <div className="flex justify-between text-[10px] text-slate-500">
+                                <span>Entrega:</span>
+                                <span className="font-bold text-slate-400">R$ {summary.fees.delivery.toFixed(2).replace('.', ',')}</span>
+                            </div>
+                            <div className="pt-2 border-t border-slate-800 flex justify-between">
+                                <span className="text-xs font-bold text-slate-400 uppercase">Total:</span>
+                                <h3 className="text-lg font-black text-amber-500">
+                                    R$ {summary.totalFees.toFixed(2).replace('.', ',')}
+                                </h3>
+                            </div>
+                        </div>
                     </div>
-                    <div className="relative z-10">
-                        <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Valor Líquido</p>
-                        <h3 className="text-3xl font-black text-emerald-400">
-                            R$ {summary.netIncome.toFixed(2).replace('.', ',')}
-                        </h3>
-                    </div>
-                </div>
 
-                {/* Balance/Expense Card */}
-                <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl space-y-4 hover:border-slate-700 transition-colors">
-                    <div className="flex items-center justify-between">
-                        <div className="w-10 h-10 bg-rose-500/10 rounded-xl flex items-center justify-center text-rose-500">
-                            <TrendingDown size={20} />
+                    {/* Net Profit Card (Valor Líquido) */}
+                    <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl space-y-4 relative overflow-hidden group">
+                        <div className="absolute right-0 top-0 p-32 bg-purple-500/5 rounded-full blur-3xl group-hover:bg-purple-500/10 transition-all" />
+                        <div className="flex items-center justify-between relative z-10">
+                            <div className="w-10 h-10 bg-purple-500/10 rounded-xl flex items-center justify-center text-purple-500">
+                                <TrendingUp size={20} />
+                            </div>
+                            <span className="text-[10px] font-bold text-purple-400 flex items-center gap-1">
+                                Lucro Líquido
+                            </span>
                         </div>
-                        <span className="text-[10px] font-bold text-rose-400 flex items-center gap-1">
-                            Despesas & Saldo
-                        </span>
-                    </div>
-                    <div className="space-y-1">
-                        <div className="flex justify-between text-[10px] text-slate-500">
-                            <span>Despesas:</span>
-                            <span className="font-bold text-rose-400">R$ {summary.expenses.toFixed(2).replace('.', ',')}</span>
-                        </div>
-                        <div className="pt-2 border-t border-slate-800 flex justify-between">
-                            <span className="text-xs font-bold text-slate-400 uppercase">Saldo Final:</span>
-                            <h3 className={`text-xl font-black ${summary.balance >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                R$ {summary.balance.toFixed(2).replace('.', ',')}
+                        <div className="relative z-10">
+                            <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Após Custos</p>
+                            <h3 className={`text-3xl font-black ${summary.netProfit >= 0 ? 'text-purple-400' : 'text-rose-400'}`}>
+                                R$ {summary.netProfit.toFixed(2).replace('.', ',')}
                             </h3>
+                            <p className="text-[10px] text-slate-500 mt-2">
+                                COGS: R$ {summary.cogs.toFixed(2).replace('.', ',')}
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Cash Balance Card (Saldo em Caixa) */}
+                    <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl space-y-4 relative overflow-hidden group">
+                        <div className="absolute right-0 top-0 p-32 bg-emerald-500/5 rounded-full blur-3xl group-hover:bg-emerald-500/10 transition-all" />
+                        <div className="flex items-center justify-between relative z-10">
+                            <div className="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center text-emerald-500">
+                                <Wallet size={20} />
+                            </div>
+                            <span className="text-[10px] font-bold text-emerald-400 flex items-center gap-1">
+                                Saldo em Caixa
+                            </span>
+                        </div>
+                        <div className="relative z-10">
+                            <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Após Taxas</p>
+                            <h3 className={`text-3xl font-black ${summary.cashBalance >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                R$ {summary.cashBalance.toFixed(2).replace('.', ',')}
+                            </h3>
+                            <p className="text-[10px] text-slate-500 mt-2">
+                                Taxas: R$ {summary.totalFees.toFixed(2).replace('.', ',')}
+                            </p>
                         </div>
                     </div>
                 </div>
