@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext';
 import { DollarSign, TrendingUp, TrendingDown, Plus, Calendar, ArrowUpRight, ArrowDownRight, Trash2, Wallet } from 'lucide-react';
 
 export const AdminFinance: React.FC = () => {
-    const { transactions, addTransaction } = useApp();
+    const { transactions, addTransaction, orders } = useApp();
     const [showAddModal, setShowAddModal] = useState(false);
     const [dateFilter, setDateFilter] = useState<'today' | 'week' | 'month' | 'all' | 'custom'>('today');
     const [customDate, setCustomDate] = useState(new Date().toISOString().split('T')[0]);
@@ -44,21 +44,49 @@ export const AdminFinance: React.FC = () => {
         return transactions.filter(t => filterByDate(new Date(t.createdAt)));
     }, [transactions, dateFilter, customDate]);
 
+    const filteredOrders = useMemo(() => {
+        return orders.filter(o => filterByDate(new Date(o.timestamp)) && o.status === 'Finalizado');
+    }, [orders, dateFilter, customDate]);
+
     const summary = useMemo(() => {
-        // Balance is always ALL TIME
-        const balance = transactions.reduce((acc, t) => {
-            return t.type === 'INCOME' ? acc + t.amount : acc - t.amount;
+        // Gross income from transactions
+        const grossIncome = filteredTransactions.reduce((acc, t) => {
+            return t.type === 'INCOME' ? acc + t.amount : acc;
         }, 0);
 
-        // Period stats depend on Filter
-        const periodStats = filteredTransactions.reduce((acc, t) => {
-            if (t.type === 'INCOME') acc.income += t.amount;
-            else acc.expense += t.amount;
-            return acc;
-        }, { income: 0, expense: 0 });
+        // Fees from filtered orders
+        const feesBredowndown = filteredOrders.reduce((acc, o) => {
+            const delivery = Number(o.deliveryFee) || 0;
+            const cardFee = Number(o.cardFee) || 0;
 
-        return { balance, ...periodStats };
-    }, [transactions, filteredTransactions]);
+            acc.delivery += delivery;
+            if (o.paymentMethod === 'Pix') {
+                acc.pix += cardFee;
+            } else if (['Cartão Crédito', 'Cartão Débito', 'Card'].includes(o.paymentMethod)) {
+                acc.machine += cardFee;
+            }
+            return acc;
+        }, { delivery: 0, machine: 0, pix: 0 });
+
+        const totalFees = feesBredowndown.delivery + feesBredowndown.machine + feesBredowndown.pix;
+        const netIncome = grossIncome - totalFees;
+
+        const expenses = filteredTransactions.reduce((acc, t) => {
+            return t.type === 'EXPENSE' ? acc + t.amount : acc;
+        }, 0);
+
+        // Balance is Net - Expenses
+        const balance = netIncome - expenses;
+
+        return {
+            grossIncome,
+            netIncome,
+            expenses,
+            balance,
+            fees: feesBredowndown,
+            totalFees
+        };
+    }, [filteredTransactions, filteredOrders]);
 
     const handleSave = async () => {
         if (!newTransaction.amount || !newTransaction.description) return alert('Preencha os campos obrigatórios');
@@ -143,57 +171,96 @@ export const AdminFinance: React.FC = () => {
             </header>
 
             {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Balance Card */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {/* Gross Card */}
+                <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl space-y-4 relative overflow-hidden group">
+                    <div className="absolute right-0 top-0 p-32 bg-blue-500/5 rounded-full blur-3xl group-hover:bg-blue-500/10 transition-all" />
+                    <div className="flex items-center justify-between relative z-10">
+                        <div className="w-12 h-12 bg-slate-800 rounded-2xl flex items-center justify-center text-blue-500">
+                            <TrendingUp size={24} />
+                        </div>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 bg-slate-950/50 px-3 py-1 rounded-full">Valor Bruto</span>
+                    </div>
+                    <div className="relative z-10">
+                        <p className="text-sm text-slate-400 font-bold mb-1">{getPeriodLabel()}</p>
+                        <h3 className="text-3xl font-black text-blue-400">
+                            R$ {summary.grossIncome.toFixed(2).replace('.', ',')}
+                        </h3>
+                    </div>
+                </div>
+
+                {/* Fees Card */}
+                <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl space-y-4 hover:border-slate-700 transition-colors">
+                    <div className="flex items-center justify-between">
+                        <div className="w-10 h-10 bg-amber-500/10 rounded-xl flex items-center justify-center text-amber-500">
+                            <DollarSign size={20} />
+                        </div>
+                        <span className="text-[10px] font-bold text-amber-400 flex items-center gap-1">
+                            Taxas Totais
+                        </span>
+                    </div>
+                    <div className="space-y-1">
+                        <div className="flex justify-between text-[10px] text-slate-500">
+                            <span>Maquininha:</span>
+                            <span className="font-bold text-slate-400">R$ {summary.fees.machine.toFixed(2).replace('.', ',')}</span>
+                        </div>
+                        <div className="flex justify-between text-[10px] text-slate-500">
+                            <span>PIX:</span>
+                            <span className="font-bold text-slate-400">R$ {summary.fees.pix.toFixed(2).replace('.', ',')}</span>
+                        </div>
+                        <div className="flex justify-between text-[10px] text-slate-500">
+                            <span>Entrega:</span>
+                            <span className="font-bold text-slate-400">R$ {summary.fees.delivery.toFixed(2).replace('.', ',')}</span>
+                        </div>
+                        <div className="pt-2 border-t border-slate-800 flex justify-between">
+                            <span className="text-xs font-bold text-slate-400 uppercase">Total:</span>
+                            <h3 className="text-lg font-black text-amber-500">
+                                R$ {summary.totalFees.toFixed(2).replace('.', ',')}
+                            </h3>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Net Card */}
                 <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl space-y-4 relative overflow-hidden group">
                     <div className="absolute right-0 top-0 p-32 bg-emerald-500/5 rounded-full blur-3xl group-hover:bg-emerald-500/10 transition-all" />
                     <div className="flex items-center justify-between relative z-10">
-                        <div className="w-12 h-12 bg-slate-800 rounded-2xl flex items-center justify-center text-emerald-500">
-                            <DollarSign size={24} />
-                        </div>
-                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 bg-slate-950/50 px-3 py-1 rounded-full">Saldo Total</span>
-                    </div>
-                    <div className="relative z-10">
-                        <p className="text-sm text-slate-400 font-bold mb-1">Caixa Atual</p>
-                        <h3 className={`text-3xl font-black ${summary.balance >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                            R$ {summary.balance.toFixed(2).replace('.', ',')}
-                        </h3>
-                    </div>
-                </div>
-
-                {/* Monthly Income */}
-                <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl space-y-4 hover:border-slate-700 transition-colors">
-                    <div className="flex items-center justify-between">
-                        <div className="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center text-blue-500">
+                        <div className="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center text-emerald-500">
                             <TrendingUp size={20} />
                         </div>
-                        <span className="text-[10px] font-bold text-blue-400 flex items-center gap-1">
-                            <Calendar size={10} /> {getPeriodLabel()}
+                        <span className="text-[10px] font-bold text-emerald-400 flex items-center gap-1">
+                            {getPeriodLabel()}
                         </span>
                     </div>
-                    <div>
-                        <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Entradas</p>
-                        <h3 className="text-2xl font-black text-blue-400">
-                            R$ {summary.income.toFixed(2).replace('.', ',')}
+                    <div className="relative z-10">
+                        <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Valor Líquido</p>
+                        <h3 className="text-3xl font-black text-emerald-400">
+                            R$ {summary.netIncome.toFixed(2).replace('.', ',')}
                         </h3>
                     </div>
                 </div>
 
-                {/* Monthly Expense */}
+                {/* Balance/Expense Card */}
                 <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl space-y-4 hover:border-slate-700 transition-colors">
                     <div className="flex items-center justify-between">
                         <div className="w-10 h-10 bg-rose-500/10 rounded-xl flex items-center justify-center text-rose-500">
                             <TrendingDown size={20} />
                         </div>
                         <span className="text-[10px] font-bold text-rose-400 flex items-center gap-1">
-                            <Calendar size={10} /> {getPeriodLabel()}
+                            Despesas & Saldo
                         </span>
                     </div>
-                    <div>
-                        <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Saídas</p>
-                        <h3 className="text-2xl font-black text-rose-400">
-                            R$ {summary.expense.toFixed(2).replace('.', ',')}
-                        </h3>
+                    <div className="space-y-1">
+                        <div className="flex justify-between text-[10px] text-slate-500">
+                            <span>Despesas:</span>
+                            <span className="font-bold text-rose-400">R$ {summary.expenses.toFixed(2).replace('.', ',')}</span>
+                        </div>
+                        <div className="pt-2 border-t border-slate-800 flex justify-between">
+                            <span className="text-xs font-bold text-slate-400 uppercase">Saldo Final:</span>
+                            <h3 className={`text-xl font-black ${summary.balance >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                R$ {summary.balance.toFixed(2).replace('.', ',')}
+                            </h3>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -308,7 +375,8 @@ export const AdminFinance: React.FC = () => {
                                         className="w-full bg-slate-950/50 border border-slate-800 rounded-xl p-3 text-white outline-none focus:border-emerald-500"
                                     >
                                         <option>Vendas</option>
-                                        <option>Suprimentos</option>
+                                        <option>Insumos</option>
+                                        <option>Contas da Empresa</option>
                                         <option>Pessoal</option>
                                         <option>Marketing</option>
                                         <option>Manutenção</option>
