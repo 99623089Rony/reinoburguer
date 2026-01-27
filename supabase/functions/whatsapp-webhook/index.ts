@@ -54,11 +54,17 @@ serve(async (req: Request) => {
                     method: body.method || "GET",
                     headers: {
                         "Content-Type": "application/json",
-                        "apikey": apiKey
+                        "apikey": apiKey,
+                        "ngrok-skip-browser-warning": "true"
                     },
                     body: (body.method && body.method !== "GET") ? JSON.stringify(body.payload || {}) : undefined,
                     signal: AbortSignal.timeout(30000)
                 });
+
+                // Handle 404 for missing instances gracefully
+                if (res.status === 404 && body.path.includes("connectionState")) {
+                    return new Response(JSON.stringify({ instance: { state: "close" } }), { headers: corsHeaders });
+                }
 
                 const data = await res.text();
                 return new Response(data, {
