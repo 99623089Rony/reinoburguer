@@ -46,6 +46,7 @@ export default function AdminChatbot() {
     const [wahaConfig, setWahaConfig] = useState({ url: '', session: 'default', apiKey: '', status: 'DISCONNECTED' });
     const [storeId, setStoreId] = useState<string | null>(null);
     const [qrCode, setQrCode] = useState<string | null>(null);
+    const [pairingCode, setPairingCode] = useState<string | null>(null);
     const [isRefreshingQr, setIsRefreshingQr] = useState(false);
     const [conversations, setConversations] = useState<ChatbotConversation[]>([]);
     const [templates, setTemplates] = useState<ChatbotTemplate[]>([]);
@@ -312,33 +313,38 @@ export default function AdminChatbot() {
                 return;
             }
 
-            if (bridgeHealth.waha !== 'online') {
-                console.warn('WAHA Engine is unreachable via bridge:', bridgeHealth.waha);
-                setWahaConfig(prev => ({ ...prev, status: 'OFFLINE' }));
-                return;
-            }
-
-            // Tenta obter o status da sessão
+            // Tenta obter o status da instância na Evolution
             try {
-                const data = await callWahaProxy('GET', `/api/sessions/${wahaConfig.session}`);
+                // GET /instance/connectionState/:instance
+                const data = await callWahaProxy('GET', `/instance/connectionState/${wahaConfig.session}`);
 
-                if (data && data.status) {
-                    setWahaConfig(prev => ({ ...prev, status: data.status }));
-                    if (data.status === 'SCAN_QR_CODE') {
+                if (data && data.instance) {
+                    const state = data.instance.state;
+                    // Mapeia estados da Evolution para o nosso componente
+                    // open, close, connecting, refused, qrcode
+                    const mappedStatus =
+                        state === 'open' ? 'CONNECTED' :
+                            state === 'qrcode' ? 'SCAN_QR_CODE' :
+                                state === 'connecting' ? 'CONNECTING' :
+                                    'STOPPED';
+
+                    setWahaConfig(prev => ({ ...prev, status: mappedStatus }));
+
+                    if (state === 'qrcode') {
                         fetchQrCode();
-                    } else {
+                    } else if (state === 'open') {
                         setQrCode(null);
+                        setPairingCode(null);
                     }
                 } else {
                     setWahaConfig(prev => ({ ...prev, status: 'STOPPED' }));
                 }
-            } catch (sessionError: any) {
-                // Se a sessão não existe (404), marca como STOPPED
-                console.log('Session not found or error:', sessionError);
+            } catch (err: any) {
+                console.log('Instance not found or error:', err);
                 setWahaConfig(prev => ({ ...prev, status: 'STOPPED' }));
             }
         } catch (err: any) {
-            console.error('Error checking WAHA status:', err);
+            console.error('Error checking status:', err);
             setWahaConfig(prev => ({ ...prev, status: 'OFFLINE' }));
         }
     };
@@ -346,34 +352,18 @@ export default function AdminChatbot() {
     const fetchQrCode = async () => {
         if (!storeId) return;
         setIsRefreshingQr(true);
-        console.log('Fetching QR Code via Proxy...');
+        console.log('Fetching Evolution QR Code...');
 
         try {
-            // We use standard fetch for binary/blob because invoke might try to parse it
-            const { data: { session } } = await supabase.auth.getSession();
-            const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://saikxbildeupefudrrhl.supabase.co';
-            const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+            // GET /instance/connect/:instance
+            const data = await callWahaProxy('GET', `/instance/connect/${wahaConfig.session}`);
 
-            const response = await fetch(`${supabaseUrl}/functions/v1/whatsapp-webhook`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${session?.access_token}`,
-                    'apikey': supabaseAnonKey
-                },
-                body: JSON.stringify({
-                    event: 'proxy',
-                    method: 'GET',
-                    path: `/api/screenshot?session=${wahaConfig.session}`
-                })
-            });
-
-            if (!response.ok) throw new Error('Failed to fetch screenshot');
-
-            const blob = await response.blob();
-            const url = URL.createObjectURL(blob);
-            setQrCode(url);
-            console.log('QR Code fetched successfully via proxy!');
+            if (data && data.base64) {
+                setQrCode(data.base64);
+                if (data.code) setPairingCode(data.code);
+            } else if (data && data.code) {
+                setPairingCode(data.code);
+            }
         } catch (err) {
             console.error('Error fetching QR Code:', err);
         } finally {
@@ -383,44 +373,25 @@ export default function AdminChatbot() {
 
     const startSession = async () => {
         if (!storeId) return;
-        console.log('Starting session via Proxy...');
+        console.log('Ensuring Evolution instance exists...');
         try {
-            // Primeiro, tenta obter a sessão para ver se ela existe
+            // Tenta criar a instância (se já existir, retorna erro que ignoramos)
             try {
-                const sessionData = await callWahaProxy('GET', `/api/sessions/${wahaConfig.session}`);
-                console.log('Session exists:', sessionData);
-            } catch (getError: any) {
-                // Se a sessão não existe (404), cria ela primeiro
-                console.log('Session not found, creating it...');
-                try {
-                    await callWahaProxy('POST', `/api/sessions`, {
-                        name: wahaConfig.session,
-                        config: {
-                            proxy: null,
-                            noweb: {
-                                store: {
-                                    enabled: true,
-                                    fullSync: false
-                                }
-                            }
-                        }
-                    });
-                    console.log('Session created successfully!');
-                    // Aguarda um pouco para a sessão ser criada
-                    await new Promise(resolve => setTimeout(resolve, 2000));
-                } catch (createError: any) {
-                    console.error('Error creating session:', createError);
-                    throw new Error('Não foi possível criar a sessão: ' + createError.message);
-                }
+                await callWahaProxy('POST', `/instance/create`, {
+                    instanceName: wahaConfig.session,
+                    token: wahaConfig.apiKey || 'brenda123',
+                    qrcode: true
+                });
+                console.log('Instance created/verified');
+            } catch (e) {
+                console.log('Instance might already exist');
             }
 
-            // Agora inicia a sessão
-            await callWahaProxy('POST', `/api/sessions/${wahaConfig.session}/start`);
-            console.log('Session start command sent!');
-            setTimeout(checkStatus, 3000);
+            // Aguarda um pouco e verifica status
+            setTimeout(checkStatus, 2000);
         } catch (err: any) {
-            console.error('Proxy error starting session:', err);
-            alert('Não foi possível iniciar a sessão. Verifique as configurações.');
+            console.error('Error starting session:', err);
+            alert('Erro ao iniciar conexão. Verifique a URL e Chave API.');
         }
     };
 
@@ -429,9 +400,10 @@ export default function AdminChatbot() {
         if (!storeId) return;
 
         try {
-            await callWahaProxy('POST', `/api/sessions/${wahaConfig.session}/logout`);
-            setWahaConfig(prev => ({ ...prev, status: 'DISCONNECTED' }));
+            await callWahaProxy('DELETE', `/instance/logout/${wahaConfig.session}`);
+            setWahaConfig(prev => ({ ...prev, status: 'STOPPED' }));
             setQrCode(null);
+            setPairingCode(null);
         } catch (err) {
             alert('Erro ao desconectar.');
         }
@@ -917,7 +889,15 @@ export default function AdminChatbot() {
                                                 className="w-64 h-64 bg-white rounded-2xl p-4 mx-auto shadow-[0_0_50px_rgba(255,255,255,0.1)] group cursor-pointer relative overflow-hidden"
                                             >
                                                 {qrCode ? (
-                                                    <img src={qrCode} alt="WhatsApp QR Code" className="w-full h-full object-contain" />
+                                                    <div className="flex flex-col items-center justify-center gap-4 w-full h-full">
+                                                        <img src={qrCode} alt="WhatsApp QR Code" className="w-full h-full object-contain" />
+                                                        {pairingCode && (
+                                                            <div className="mt-4 text-center bg-emerald-500/10 p-4 rounded-2xl border border-emerald-500/20 w-full animate-in fade-in slide-in-from-bottom-2">
+                                                                <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-1">Código de Pareamento</p>
+                                                                <p className="text-3xl font-black text-emerald-500 tracking-[0.2em]">{pairingCode}</p>
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 ) : (
                                                     <div className="w-full h-full bg-slate-100 flex items-center justify-center relative overflow-hidden rounded-lg">
                                                         <div className="absolute inset-0 bg-slate-200 animate-pulse" />
@@ -942,17 +922,18 @@ export default function AdminChatbot() {
                                             <div>
                                                 <h3 className="text-lg font-black text-white">
                                                     Status: {
-                                                        wahaConfig.status === 'OFFLINE' ? 'Servidor WAHA Offline (Koyeb)' :
+                                                        wahaConfig.status === 'OFFLINE' ? 'Servidor Evolution Offline' :
                                                             wahaConfig.status === 'BRIDGE_OFFLINE' ? 'Ponte Supabase Desconectada' :
-                                                                wahaConfig.status === 'CHECKING' ? 'Verificando Conexão...' :
-                                                                    wahaConfig.status === 'STOPPED' ? 'Sessão Parada - Clique em Iniciar' :
+                                                                wahaConfig.status === 'CHECKING' ? 'Verificando...' :
+                                                                    wahaConfig.status === 'STOPPED' ? 'Instância Parada' :
                                                                         wahaConfig.status === 'UNAUTHORIZED' ? 'Chave API Incorreta' :
-                                                                            'Aguardando QR Code'
+                                                                            wahaConfig.status === 'CONNECTED' ? 'Conectado' :
+                                                                                'Aguardando QR Code'
                                                     }
                                                 </h3>
                                                 <p className="text-slate-500 text-sm mt-1 italic">
                                                     {wahaConfig.status === 'UNAUTHORIZED'
-                                                        ? 'Defina a mesma Chave API no Koyeb e aqui.'
+                                                        ? 'Defina a mesma Chave API na Evolution e aqui.'
                                                         : 'No WhatsApp: Aparelhos Conectados > Conectar um Aparelho'}
                                                 </p>
                                             </div>

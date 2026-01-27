@@ -14,7 +14,7 @@ serve(async (req: Request) => {
         return new Response("ok", { headers: corsHeaders });
     }
 
-    console.log(`[WAHA-BRIDGE] Request: ${req.method} ${req.url}`);
+    console.log(`[EVO-BRIDGE] Request: ${req.method} ${req.url}`);
 
     try {
         const supabase = createClient(
@@ -22,147 +22,83 @@ serve(async (req: Request) => {
             Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
         );
 
-        // Safely parse body
         let body: any;
         const rawBody = await req.text();
-        if (!rawBody) {
-            console.log("[WAHA-BRIDGE] No body received");
-            return new Response(JSON.stringify({ status: "ping_received" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
-        }
+        if (!rawBody) return new Response(JSON.stringify({ status: "ping" }), { headers: corsHeaders });
 
         try {
             body = JSON.parse(rawBody);
         } catch (e) {
-            console.error("[WAHA-BRIDGE] Invalid JSON:", rawBody.substring(0, 100));
-            return new Response(JSON.stringify({ error: "Invalid JSON body" }), { status: 400, headers: corsHeaders });
+            return new Response(JSON.stringify({ error: "Invalid JSON" }), { status: 400, headers: corsHeaders });
         }
 
-        console.log(`[WAHA-BRIDGE] Event Type: ${body.event}`);
-
-        // 0. Handle Ping (Testing)
-        if (body.event === "ping") {
-            // Get Store Config for health check
-            const { data: storeConfig } = await supabase
-                .from("store_config")
-                .select("waha_url, waha_api_key")
-                .maybeSingle();
-
-            let wahaHealth = "unknown";
-            if (storeConfig?.waha_url) {
-                try {
-                    const target = `${storeConfig.waha_url}/api/version`;
-                    console.log(`[WAHA-BRIDGE] Diagnostic Ping to: ${target}`);
-                    const healthRes = await fetch(target, {
-                        method: "GET",
-                        headers: {
-                            ...(storeConfig.waha_api_key ? { "X-Api-Key": storeConfig.waha_api_key } : {})
-                        },
-                        signal: AbortSignal.timeout(25000)
-                    });
-                    wahaHealth = healthRes.ok ? "online" : `error_${healthRes.status}`;
-                    console.log(`[WAHA-BRIDGE] Diagnostic Result: ${wahaHealth}`);
-                } catch (e: any) {
-                    console.error(`[WAHA-BRIDGE] Diagnostic Timeout/Error: ${e.message}`);
-                    wahaHealth = `offline_${e.message}`;
-                }
-            }
-
-            return new Response(JSON.stringify({
-                pong: true,
-                timestamp: new Date().toISOString(),
-                waha_reachable: wahaHealth
-            }), {
-                headers: { ...corsHeaders, "Content-Type": "application/json" }
-            });
-        }
-
-        // 1. Get Store Config
-        const { data: storeConfig, error: storeError } = await supabase
+        // 1. Get Config
+        const { data: storeConfig } = await supabase
             .from("store_config")
             .select("waha_url, waha_session, waha_api_key")
             .maybeSingle();
 
-        if (storeError) {
-            console.error("[WAHA-BRIDGE] DB Error (store_config):", storeError);
-            throw new Error(`Database error: ${storeError.message}`);
-        }
+        if (!storeConfig) throw new Error("Config not found");
 
-        if (!storeConfig) {
-            console.error("[WAHA-BRIDGE] Config not found in database.");
-            throw new Error("Store configuration missing in database.");
-        }
+        const baseUrl = storeConfig.waha_url?.endsWith('/') ? storeConfig.waha_url.slice(0, -1) : storeConfig.waha_url;
+        const apiKey = storeConfig.waha_api_key;
+        const instance = storeConfig.waha_session || "default";
 
-        // 2. Handle Proxy (Frontend Requests)
+        // 2. Handle Admin Proxy
         if (body.event === "proxy") {
-            if (!storeConfig.waha_url) throw new Error("WAHA_URL not configured in DB.");
-
-            const wahaUrl = storeConfig.waha_url.endsWith('/') ? storeConfig.waha_url.slice(0, -1) : storeConfig.waha_url;
-            const targetUrl = `${wahaUrl}${body.path}`;
-            console.log(`[WAHA-BRIDGE] Proxying to: ${targetUrl}`);
+            const targetUrl = `${baseUrl}${body.path}`;
+            console.log(`[EVO-BRIDGE] Proxying to: ${targetUrl}`);
 
             try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 20000); // 20s timeout
-
-                const wahaRes = await fetch(targetUrl, {
+                const res = await fetch(targetUrl, {
                     method: body.method || "GET",
                     headers: {
                         "Content-Type": "application/json",
-                        ...(storeConfig.waha_api_key ? { "X-Api-Key": storeConfig.waha_api_key } : {})
+                        "apikey": apiKey
                     },
                     body: (body.method && body.method !== "GET") ? JSON.stringify(body.payload || {}) : undefined,
-                    signal: controller.signal
+                    signal: AbortSignal.timeout(30000)
                 });
-                clearTimeout(timeoutId);
 
-                const contentType = wahaRes.headers.get("content-type") || "";
-                if (contentType.includes("image/")) {
-                    const blob = await wahaRes.blob();
-                    return new Response(blob, { headers: { ...corsHeaders, "Content-Type": contentType } });
-                }
-
-                const responseData = await wahaRes.text();
-                return new Response(responseData, {
-                    status: wahaRes.status,
+                const data = await res.text();
+                return new Response(data, {
+                    status: res.status,
                     headers: { ...corsHeaders, "Content-Type": "application/json" }
                 });
             } catch (err: any) {
-                console.error(`[WAHA-BRIDGE] Fetch Error: ${err.message}`);
-                return new Response(JSON.stringify({ error: "WAHA connection failed", details: err.message }), {
-                    status: 504,
-                    headers: corsHeaders
-                });
+                return new Response(JSON.stringify({ error: err.message }), { status: 504, headers: corsHeaders });
             }
         }
 
-        // 3. Handle Webhook (WAHA events)
-        if (body.event === "message") {
-            const payload = body.payload;
-            if (!payload || !payload.from || !payload.body) {
-                console.log("[WAHA-BRIDGE] Invalid message payload.");
-                return new Response("invalid payload", { headers: corsHeaders });
-            }
+        // 3. Handle Webhook (Evolution Format)
+        // Evolution sends event name in property 'event'
+        const evoEvent = body.event;
+        if (evoEvent === "messages.upsert") {
+            const message = body.data?.message;
+            if (!message) return new Response("no message", { headers: corsHeaders });
 
-            const phone = payload.from.split("@")[0];
-            const text = payload.body;
-            const name = payload.pushName;
+            const isMe = body.data?.key?.fromMe;
+            if (isMe) return new Response("from me", { headers: corsHeaders });
+
+            const remoteJid = body.data?.key?.remoteJid;
+            const phone = remoteJid?.split("@")[0];
+            const text = message.conversation || message.extendedTextMessage?.text || message.imageMessage?.caption || "";
+            const name = body.data?.pushName || "Cliente";
+
+            if (!phone || !text) return new Response("ignored", { headers: corsHeaders });
 
             const responseText = await processBotLogic(supabase, phone, text, name);
             if (responseText) {
-                await sendWahaMessage(storeConfig, payload.from, responseText);
+                await sendEvoMessage(baseUrl, apiKey, instance, remoteJid, responseText);
             }
-
             return new Response("ok", { headers: corsHeaders });
         }
 
         return new Response(JSON.stringify({ status: "ignored", event: body.event }), { headers: corsHeaders });
 
     } catch (error: any) {
-        console.error("[WAHA-BRIDGE] CRITICAL ERROR:", error.message);
-        return new Response(JSON.stringify({ error: error.message }), {
-            status: 500,
-            headers: { ...corsHeaders, "Content-Type": "application/json" }
-        });
+        console.error("[EVO-BRIDGE] Error:", error.message);
+        return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders });
     }
 });
 
@@ -213,13 +149,11 @@ async function processBotLogic(supabase: any, phone: string, text: string, name?
             const welcome = botConfig.welcome_message || "Olá! Como posso ajudar?";
             const options = botConfig.menu_options || [];
             const menuText = options.map((o: any) => `${o.number}️⃣ ${o.label}`).join('\n');
-
             response = `${welcome}\n\n${menuText}`;
             context.currentStep = "main_menu";
         } else if (context.currentStep === "main_menu") {
             const opt = text.trim();
             const option = (botConfig.menu_options || []).find((o: any) => o.number.toString() === opt);
-
             if (option) {
                 if (option.action === "request_agent") {
                     await supabase.from("chatbot_conversations").update({ status: "waiting_agent" }).eq("id", conversation.id);
@@ -237,9 +171,7 @@ async function processBotLogic(supabase: any, phone: string, text: string, name?
         await supabase.from("chatbot_conversations").update({ context }).eq("id", conversation.id);
         await saveBotMessage(supabase, conversation.id, response);
         return response;
-
     } catch (e: any) {
-        console.error("[WAHA-BRIDGE] Logic Error:", e.message);
         return "";
     }
 }
@@ -247,22 +179,17 @@ async function processBotLogic(supabase: any, phone: string, text: string, name?
 async function saveBotMessage(supabase: any, convId: string, text: string) {
     try {
         await supabase.from("chatbot_messages").insert([{ conversation_id: convId, sender_type: "bot", message_text: text }]);
-    } catch (e: any) { console.error(e); }
+    } catch (e: any) { }
 }
 
-async function sendWahaMessage(config: any, to: string, text: string) {
+async function sendEvoMessage(baseUrl: string, apiKey: string, instance: string, to: string, text: string) {
     try {
-        const url = `${config.waha_url}/api/sendText`;
-        const res = await fetch(url.replace('//api', '/api'), {
+        await fetch(`${baseUrl}/message/sendText/${instance}`, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                ...(config.waha_api_key ? { "X-Api-Key": config.waha_api_key } : {})
-            },
-            body: JSON.stringify({ chatId: to, text: text, session: config.waha_session || "default" })
+            headers: { "Content-Type": "application/json", "apikey": apiKey },
+            body: JSON.stringify({ number: to, text: text, delay: 1200, linkPreview: false })
         });
-        if (!res.ok) console.error("[WAHA-BRIDGE] Send Error:", await res.text());
     } catch (e: any) {
-        console.error("[WAHA-BRIDGE] Connection Error:", e.message);
+        console.error("[EVO-BRIDGE] Send Error:", e.message);
     }
 }
