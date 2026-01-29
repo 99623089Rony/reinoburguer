@@ -496,6 +496,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const order = orders.find(o => o.id === orderId);
     if (!order) return;
 
+    // ✅ NEW: Auto-print when accepting order (status changes to DELIVERING)
+    if (status === OrderStatus.DELIVERING && storeConfig?.printerSettings?.autoPrint) {
+      console.log('🖨️ Order accepted! Adding to print queue:', order.id);
+      PrinterService.addToQueue(order, storeConfig.printerSettings.paperSize);
+    }
+
     // Award points on completion
     if (status === OrderStatus.FINISHED && order.status !== OrderStatus.FINISHED) {
       const { data: customer } = await supabase.from('customers').select('id, points, points_monthly').eq('phone', order.phone).maybeSingle();
@@ -516,7 +522,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       console.error('Error updating status:', error);
       fetchOrders();
     }
-  }, [orders, fetchCustomers, stopNotificationSound, fetchOrders]);
+  }, [orders, fetchCustomers, stopNotificationSound, fetchOrders, storeConfig]);
 
   const updateOrder = useCallback(async (orderId: string, updates: Partial<Order>) => {
     // Map to DB fields
@@ -581,11 +587,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           const mapped: Order = { id: o.id, customerName: o.customer_name, phone: o.phone, address: o.address, total: Number(o.total), paymentMethod: o.payment_method, status: o.status, items: o.items || [], timestamp: new Date(o.created_at), couponUsed: o.coupon_used, rewardTitle: o.reward_title, dailyOrderNumber: o.daily_order_number };
           syncCustomer(mapped);
 
-          // Add to print queue instead of printing directly
-          if (storeConfig?.printerSettings?.autoPrint) {
-            console.log('📄 New order received, adding to print queue:', mapped.id);
-            PrinterService.addToQueue(mapped, storeConfig.printerSettings.paperSize);
-          }
+          // ❌ REMOVED: Auto-print on arrival
+          // Printing will happen when admin accepts the order (status change to DELIVERING)
         } else if (p.eventType === 'UPDATE') {
           const o = p.new as any;
 
@@ -594,11 +597,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             playNotificationSound();
             const mapped: Order = { id: o.id, customerName: o.customer_name, phone: o.phone, address: o.address, total: Number(o.total), paymentMethod: o.payment_method, status: o.status, items: o.items || [], timestamp: new Date(o.created_at), couponUsed: o.coupon_used, rewardTitle: o.reward_title, dailyOrderNumber: o.daily_order_number };
 
-            // Add to print queue instead of printing directly
-            if (storeConfig?.printerSettings?.autoPrint) {
-              console.log('📄 Order became PENDING, adding to print queue:', mapped.id);
-              PrinterService.addToQueue(mapped, storeConfig.printerSettings.paperSize);
-            }
+            // ❌ REMOVED: Auto-print on PIX payment
+            // Printing will happen when admin accepts the order
           }
 
           if (o.status === OrderStatus.FINISHED) {
