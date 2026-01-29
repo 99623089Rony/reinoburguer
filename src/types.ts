@@ -162,7 +162,19 @@ export interface Transaction {
   category: string;
   paymentMethod?: string;
   orderId?: string;
+  billId?: string;
   createdAt: Date;
+}
+
+export interface Bill {
+  id: string;
+  description: string;
+  amount: number;
+  due_date: string;
+  status: 'pending' | 'paid';
+  category: string;
+  paymentMethod?: string;
+  transaction_id?: string;
 }
 
 export interface FinancialSummary {

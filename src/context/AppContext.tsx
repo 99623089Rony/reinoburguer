@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
-import { Product, Order, CartItem, OrderStatus, Customer, Category, StoreConfig, ExtraGroup, ExtraOption, OpeningHour, DeliveryFee, PrinterConfig, Reward, CustomerCoupon, Transaction } from '../types';
+import { Product, Order, CartItem, OrderStatus, Customer, Category, StoreConfig, ExtraGroup, ExtraOption, OpeningHour, DeliveryFee, PrinterConfig, Reward, CustomerCoupon, Transaction, Bill } from '../types';
 import { supabase } from '../lib/supabase';
 import { PrinterService } from '../lib/PrinterService';
 import { WhatsAppService } from '../lib/WhatsAppService';
@@ -78,6 +78,11 @@ interface AppContextType {
   loginCustomer: (phone: string) => Promise<boolean>;
   audioUnlocked: boolean; // Exposed to show UI warning
   ordersBadgeCount: number;
+  bills: Bill[];
+  fetchBills: () => Promise<void>;
+  addBill: (bill: Omit<Bill, 'id'>) => Promise<void>;
+  deleteBill: (id: string) => Promise<void>;
+  payBill: (billId: string, paymentMethod: string) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -159,6 +164,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [paymentData, setPaymentData] = useState<{ orderId: string; amount: number; createdAt: Date } | null>(null);
   const [ordersBadgeCount, setOrdersBadgeCount] = useState(0);
+  const [bills, setBills] = useState<Bill[]>([]);
 
   const openPayment = useCallback((orderId: string, amount: number, createdAt: Date) => {
     setPaymentData({ orderId, amount, createdAt });
@@ -183,11 +189,66 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         category: t.category,
         paymentMethod: t.payment_method,
         orderId: t.order_id,
+        billId: t.bill_id,
         createdAt: new Date(t.created_at)
       }));
       setTransactions(mapped);
     }
   }, []);
+
+  const fetchBills = useCallback(async () => {
+    const { data } = await supabase.from('bills').select('*').order('due_date', { ascending: true });
+    if (data) {
+      setBills(data.map((b: any) => ({
+        id: b.id,
+        description: b.description,
+        amount: Number(b.amount),
+        due_date: b.due_date,
+        status: b.status,
+        category: b.category,
+        paymentMethod: b.payment_method,
+        transaction_id: b.transaction_id
+      })));
+    }
+  }, []);
+
+  const addBill = useCallback(async (bill: Omit<Bill, 'id'>) => {
+    const { data, error } = await supabase.from('bills').insert([bill]).select().single();
+    if (error) alert('Erro ao adicionar conta: ' + error.message);
+    else fetchBills();
+  }, [fetchBills]);
+
+  const deleteBill = useCallback(async (id: string) => {
+    const { error } = await supabase.from('bills').delete().eq('id', id);
+    if (error) alert('Erro ao excluir conta: ' + error.message);
+    else fetchBills();
+  }, [fetchBills]);
+
+  const payBill = useCallback(async (billId: string, paymentMethod: string) => {
+    const bill = bills.find(b => b.id === billId);
+    if (!bill) return;
+
+    // 1. Create transaction
+    const { data: trans, error: transErr } = await supabase.from('transactions').insert([{
+      type: 'EXPENSE',
+      amount: bill.amount,
+      description: `Pagamento: ${bill.description}`,
+      category: bill.category,
+      payment_method: paymentMethod
+    }]).select().single();
+
+    if (transErr) return alert('Erro ao criar transação: ' + transErr.message);
+
+    // 2. Update bill
+    await supabase.from('bills').update({
+      status: 'paid',
+      payment_method: paymentMethod,
+      transaction_id: trans.id
+    }).eq('id', billId);
+
+    fetchBills();
+    fetchTransactions();
+  }, [bills, fetchBills, fetchTransactions]);
 
   const addTransaction = useCallback(async (t: Omit<Transaction, 'id' | 'createdAt'>) => {
     const { error } = await supabase.from('transactions').insert([{
@@ -693,6 +754,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       .on('postgres_changes', { event: '*', schema: 'public', table: 'rewards' }, fetchRewards)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'coupons' }, fetchMyCoupons)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, (p) => { console.log('📥 Realtime TRANSACTIONS event:', p.eventType); fetchTransactions(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bills' }, (p) => { console.log('📥 Realtime BILLS event:', p.eventType); fetchBills(); })
       .subscribe((status) => {
         console.log('📡 Realtime subscription status:', status);
       });
@@ -707,7 +769,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       supabase.removeChannel(channel);
       clearInterval(interval);
     };
-  }, [fetchProducts, fetchOrders, fetchCategories, fetchStoreConfig, fetchCustomers, playNotificationSound, playPaymentReminderSound, syncCustomer, storeConfig]);
+  }, [fetchProducts, fetchOrders, fetchCategories, fetchStoreConfig, fetchCustomers, fetchBills, fetchTransactions, playNotificationSound, playPaymentReminderSound, syncCustomer, storeConfig]);
 
   const resetRanking = useCallback(async () => {
     // 1. Get the #1 customer
@@ -736,7 +798,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     fetchCustomers();
     fetchMyCoupons();
-  }, [customers, storeConfig, rewards, fetchCustomers, fetchMyCoupons]);
+    fetchBills();
+    fetchTransactions();
+  }, [customers, storeConfig, rewards, fetchCustomers, fetchMyCoupons, fetchBills, fetchTransactions]);
 
   // CRUD & Cart Logic (Restored full set)
   const addToCart = useCallback((product: Product, quantity: number = 1, extras: any[] = [], observation: string = '') => {
@@ -958,7 +1022,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       prefillCoupon, setPrefillCoupon,
       paymentData, openPayment, closePayment,
       loginCustomer,
-      ordersBadgeCount
+      ordersBadgeCount,
+      bills, fetchBills, addBill, deleteBill, payBill
     }}>
       {children}
     </AppContext.Provider>
