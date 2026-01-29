@@ -435,6 +435,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [audio, setView]);
 
   const playPaymentReminderSound = useCallback(() => {
+    console.log('💰 playPaymentReminderSound CALLED!');
+    console.log('   - audio object:', audio);
+    console.log('   - setView function:', setView);
+
     try {
       console.log('💰 Playing payment reminder sound...');
 
@@ -459,6 +463,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       // Browser notification
       if ('Notification' in window && Notification.permission === 'granted') {
+        console.log('💰 Showing browser notification');
         new Notification('💰 Aguardando Pagamento PIX', {
           body: 'Pedido criado, aguardando confirmação de pagamento.',
           icon: '/burger-icon.png',
@@ -467,6 +472,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           window.focus();
           setView('admin');
         };
+      } else {
+        console.warn('⚠️ Notification not available or permission not granted');
       }
     } catch (e) {
       console.error('Payment reminder notification error:', e);
@@ -624,6 +631,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         if (p.eventType === 'INSERT') {
           const o = p.new as any;
+          console.log('🆕 INSERT event - Order status:', o.status);
+          console.log('🆕 INSERT event - OrderStatus.AWAITING_PAYMENT:', OrderStatus.AWAITING_PAYMENT);
+          console.log('🆕 INSERT event - Comparison result:', o.status === OrderStatus.AWAITING_PAYMENT);
+
           const mapped: Order = { id: o.id, customerName: o.customer_name, phone: o.phone, address: o.address, total: Number(o.total), paymentMethod: o.payment_method, status: o.status, items: o.items || [], timestamp: new Date(o.created_at), couponUsed: o.coupon_used, rewardTitle: o.reward_title, dailyOrderNumber: o.daily_order_number };
           syncCustomer(mapped);
 
@@ -637,6 +648,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             WhatsAppService.sendPaymentReminder(mapped, storeConfig?.name);
           } else {
             // Regular order (paid PIX or pay on delivery) - normal notification
+            console.log('🔔 Regular order detected, playing normal notification');
             playNotificationSound();
           }
 
