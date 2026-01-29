@@ -680,7 +680,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       supabase.removeChannel(channel);
       clearInterval(interval);
     };
-  }, [fetchProducts, fetchOrders, fetchCategories, fetchStoreConfig, fetchCustomers, playNotificationSound, syncCustomer, storeConfig]);
+  }, [fetchProducts, fetchOrders, fetchCategories, fetchStoreConfig, fetchCustomers, playNotificationSound, playPaymentReminderSound, syncCustomer, storeConfig]);
 
   const resetRanking = useCallback(async () => {
     // 1. Get the #1 customer
