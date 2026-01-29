@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { Product, Order, CartItem, OrderStatus, Customer, Category, StoreConfig, ExtraGroup, ExtraOption, OpeningHour, DeliveryFee, PrinterConfig, Reward, CustomerCoupon, Transaction } from '../types';
 import { supabase } from '../lib/supabase';
 import { PrinterService } from '../lib/PrinterService';
@@ -380,6 +380,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   const [audioUnlocked, setAudioUnlocked] = useState(false);
+  const viewRef = useRef(view);
+  const audioUnlockedRef = useRef(audioUnlocked);
+
+  useEffect(() => { viewRef.current = view; }, [view]);
+  useEffect(() => { audioUnlockedRef.current = audioUnlocked; }, [audioUnlocked]);
 
   // Unlock audio on first user interaction (required by browsers)
   // Unlock audio on first user interaction (required by browsers)
@@ -432,40 +437,44 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } catch (e) {
       console.error('Notification error:', e);
     }
-  }, [audio, setView]);
+  }, [audio]);
 
   const playPaymentReminderSound = useCallback(() => {
     console.log('💰 playPaymentReminderSound CALLED!');
-    console.log('   - view:', view);
-    console.log('   - audioUnlocked:', audioUnlocked);
+    console.log('   - view (ref):', viewRef.current);
+    console.log('   - audioUnlocked (ref):', audioUnlockedRef.current);
 
     try {
       // Only play if in admin view and audio is unlocked
-      if (view !== 'admin' || !audioUnlocked) {
-        console.warn('⚠️ Skipping payment reminder sound (view not admin or audio locked)');
+      if (viewRef.current !== 'admin') {
+        console.warn('⚠️ Skipping payment reminder sound (view not admin)');
         return;
       }
 
-      console.log('💰 Playing payment reminder sound (Double Beep)...');
-
-      // Play 2 short beeps instead of continuous loop
-      audio.currentTime = 0;
-      audio.play().catch(e => console.warn('Audio play failed:', e));
-
-      setTimeout(() => {
-        audio.pause();
-        audio.currentTime = 0;
-      }, 500); // Stop after 0.5 seconds
-
-      // Second beep
-      setTimeout(() => {
+      if (!audioUnlockedRef.current) {
+        console.warn('⚠️ Audio locked - Attempting to show notification anyway');
+        // We still show the notification!
+      } else {
+        console.log('💰 Playing payment reminder sound (Double Beep)...');
+        // Play 2 short beeps instead of continuous loop
         audio.currentTime = 0;
         audio.play().catch(e => console.warn('Audio play failed:', e));
+
         setTimeout(() => {
           audio.pause();
           audio.currentTime = 0;
-        }, 500);
-      }, 1000); // Second beep after 1 second
+        }, 500); // Stop after 0.5 seconds
+
+        // Second beep
+        setTimeout(() => {
+          audio.currentTime = 0;
+          audio.play().catch(e => console.warn('Audio play failed:', e));
+          setTimeout(() => {
+            audio.pause();
+            audio.currentTime = 0;
+          }, 500);
+        }, 1000); // Second beep after 1 second
+      }
 
       // Browser notification
       if ('Notification' in window && Notification.permission === 'granted') {
@@ -484,7 +493,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } catch (e) {
       console.error('Payment reminder notification error:', e);
     }
-  }, [audio, setView, view, audioUnlocked]);
+  }, [audio, setView]);
 
   const stopNotificationSound = useCallback(() => { try { audio.pause(); audio.currentTime = 0; } catch (e) { } }, [audio]);
 

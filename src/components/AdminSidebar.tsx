@@ -81,7 +81,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ activeTab, onTabChan
             <div className="p-4 border-t border-slate-800 space-y-2 flex-shrink-0">
                 <div className="px-4 py-1 text-[10px] font-black text-slate-600 uppercase tracking-widest flex justify-between items-center">
                     <span>Reino Burguer</span>
-                    <span>v1.0.4-pix-fix</span>
+                    <span>v1.0.5-pix-deep-fix</span>
                 </div>
                 {!audioUnlocked && (
                     <button

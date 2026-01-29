@@ -101,7 +101,7 @@ export class WhatsAppService {
 
         // Clean phone number for URL
         const cleanPhone = order.phone.replace(/\D/g, '');
-        const phoneWithCountry = cleanPhone.length === 11 ? `55${cleanPhone}` : cleanPhone;
+        const phoneWithCountry = (cleanPhone.length === 10 || cleanPhone.length === 11) ? `55${cleanPhone}` : cleanPhone;
 
         const whatsappUrl = `https://wa.me/${phoneWithCountry}?text=${encodedMessage}`;
         window.open(whatsappUrl, '_blank');
@@ -120,7 +120,7 @@ export class WhatsAppService {
 
         const encodedMessage = encodeURIComponent(message);
         const cleanPhone = order.phone.replace(/\D/g, '');
-        const phoneWithCountry = cleanPhone.length === 11 ? `55${cleanPhone}` : cleanPhone;
+        const phoneWithCountry = (cleanPhone.length === 10 || cleanPhone.length === 11) ? `55${cleanPhone}` : cleanPhone;
 
         const whatsappUrl = `https://wa.me/${phoneWithCountry}?text=${encodedMessage}`;
         window.open(whatsappUrl, '_blank');
@@ -140,7 +140,7 @@ export class WhatsAppService {
             message += `*${storeName}*`;
 
             const cleanPhone = order.phone.replace(/\D/g, '');
-            const phoneWithCountry = cleanPhone.length === 11 ? `55${cleanPhone}` : cleanPhone;
+            const phoneWithCountry = (cleanPhone.length === 10 || cleanPhone.length === 11) ? `55${cleanPhone}` : cleanPhone;
 
             // Call Supabase Edge Function to proxy the message
             const { data, error } = await supabase.functions.invoke('whatsapp-webhook', {
