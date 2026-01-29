@@ -170,11 +170,11 @@ export interface Bill {
   id: string;
   description: string;
   amount: number;
-  due_date: string;
+  dueDate: string;
   status: 'pending' | 'paid';
   category: string;
   paymentMethod?: string;
-  transaction_id?: string;
+  transactionId?: string;
 }
 
 export interface FinancialSummary {

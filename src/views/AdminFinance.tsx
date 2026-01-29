@@ -22,7 +22,7 @@ export const AdminFinance: React.FC = () => {
     const [newBill, setNewBill] = useState({
         description: '',
         amount: '',
-        due_date: new Date().toISOString().split('T')[0],
+        dueDate: new Date().toISOString().split('T')[0],
         category: 'Contas da Empresa'
     });
 
@@ -116,12 +116,12 @@ export const AdminFinance: React.FC = () => {
         await addBill({
             description: newBill.description,
             amount: parseAmount(newBill.amount),
-            due_date: newBill.due_date,
+            dueDate: newBill.dueDate,
             status: 'pending',
             category: newBill.category
         });
         setShowBillModal(false);
-        setNewBill({ description: '', amount: '', due_date: new Date().toISOString().split('T')[0], category: 'Contas da Empresa' });
+        setNewBill({ description: '', amount: '', dueDate: new Date().toISOString().split('T')[0], category: 'Contas da Empresa' });
     };
 
     return (
@@ -218,7 +218,7 @@ export const AdminFinance: React.FC = () => {
                                 <div className="flex justify-between items-start mb-2">
                                     <div>
                                         <p className="font-bold text-sm text-white">{bill.description}</p>
-                                        <p className="text-[10px] text-slate-500">Vence em: {new Date(bill.due_date).toLocaleDateString()}</p>
+                                        <p className="text-[10px] text-slate-500">Vence em: {new Date(bill.dueDate).toLocaleDateString()}</p>
                                     </div>
                                     <p className="font-black text-rose-400 text-sm">R$ {bill.amount.toFixed(2).replace('.', ',')}</p>
                                 </div>
@@ -317,7 +317,7 @@ export const AdminFinance: React.FC = () => {
                             </select>
                             {newTransaction.category === 'Saldo Inicial' && (
                                 <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl flex items-start gap-3">
-                                    <AlertCircle className="text-amber-500 shrink-0" size={18} />
+                                    <AlertCircle className="text-amber-500" size={18} />
                                     <p className="text-[10px] text-amber-500 font-medium">Use 'Saldo Inicial' para registrar aportes ou dívidas iniciais (Saída p/ saldo negativo inicial).</p>
                                 </div>
                             )}
@@ -338,7 +338,7 @@ export const AdminFinance: React.FC = () => {
                             <input type="text" placeholder="Nome da Conta (Ex: Aluguel, Luz...)" value={newBill.description} onChange={e => setNewBill({ ...newBill, description: e.target.value })} className="w-full bg-slate-950/50 border border-slate-800 rounded-xl p-4 text-white outline-none focus:border-emerald-500 font-bold" />
                             <div className="grid grid-cols-2 gap-4">
                                 <input type="text" placeholder="Valor R$ 0,00" value={newBill.amount} onChange={e => setNewBill({ ...newBill, amount: e.target.value })} className="bg-slate-950/50 border border-slate-800 rounded-xl p-4 text-white outline-none focus:border-emerald-500 font-bold" />
-                                <input type="date" value={newBill.due_date} onChange={e => setNewBill({ ...newBill, due_date: e.target.value })} className="bg-slate-950/50 border border-slate-800 rounded-xl p-4 text-white outline-none focus:border-emerald-500 font-bold text-xs" />
+                                <input type="date" value={newBill.dueDate} onChange={e => setNewBill({ ...newBill, dueDate: e.target.value })} className="bg-slate-950/50 border border-slate-800 rounded-xl p-4 text-white outline-none focus:border-emerald-500 font-bold text-xs" />
                             </div>
                             <select value={newBill.category} onChange={e => setNewBill({ ...newBill, category: e.target.value })} className="w-full bg-slate-950/50 border border-slate-800 rounded-xl p-4 text-white outline-none focus:border-emerald-500 font-bold">
                                 <option>Contas da Empresa</option>

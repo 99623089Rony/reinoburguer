@@ -203,17 +203,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         id: b.id,
         description: b.description,
         amount: Number(b.amount),
-        due_date: b.due_date,
+        dueDate: b.due_date,
         status: b.status,
         category: b.category,
         paymentMethod: b.payment_method,
-        transaction_id: b.transaction_id
+        transactionId: b.transaction_id
       })));
     }
   }, []);
 
   const addBill = useCallback(async (bill: Omit<Bill, 'id'>) => {
-    const { data, error } = await supabase.from('bills').insert([bill]).select().single();
+    const { data, error } = await supabase.from('bills').insert([{
+      description: bill.description,
+      amount: bill.amount,
+      due_date: bill.dueDate,
+      status: bill.status,
+      category: bill.category
+    }]).select().single();
     if (error) alert('Erro ao adicionar conta: ' + error.message);
     else fetchBills();
   }, [fetchBills]);
@@ -234,7 +240,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       amount: bill.amount,
       description: `Pagamento: ${bill.description}`,
       category: bill.category,
-      payment_method: paymentMethod
+      payment_method: paymentMethod,
+      bill_id: billId
     }]).select().single();
 
     if (transErr) return alert('Erro ao criar transação: ' + transErr.message);
@@ -257,8 +264,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       description: t.description,
       category: t.category,
       payment_method: t.paymentMethod,
-      order_id: t.orderId
+      order_id: t.orderId,
+      bill_id: t.billId
     }]);
+
     if (error) {
       console.error('❌ Error adding transaction:', error);
       alert('Erro ao adicionar transação: ' + error.message);
