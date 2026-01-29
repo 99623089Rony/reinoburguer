@@ -105,4 +105,23 @@ export class WhatsAppService {
         const whatsappUrl = `https://wa.me/${phoneWithCountry}?text=${encodedMessage}`;
         window.open(whatsappUrl, '_blank');
     }
+
+    static sendPaymentReminder(order: Order, storeName: string = 'Reino Burguer') {
+        const orderId = order.dailyOrderNumber || order.id.slice(-5).toUpperCase();
+
+        let message = `Olá *${order.customerName}*! 😊\n\n`;
+        message += `Recebemos seu pedido *#${orderId}* no valor de *R$ ${order.total.toFixed(2).replace('.', ',')}*! 🍔\n\n`;
+        message += `Para confirmarmos e enviarmos para a cozinha, precisamos que você finalize o pagamento via *PIX*. 💳\n\n`;
+        message += `Assim que o pagamento for confirmado, seu pedido entrará em preparo imediatamente! ⚡\n\n`;
+        message += `Qualquer dúvida, estamos à disposição!\n\n`;
+        message += `Obrigado pela preferência! ❤️\n`;
+        message += `*${storeName}*`;
+
+        const encodedMessage = encodeURIComponent(message);
+        const cleanPhone = order.phone.replace(/\D/g, '');
+        const phoneWithCountry = cleanPhone.length === 11 ? `55${cleanPhone}` : cleanPhone;
+
+        const whatsappUrl = `https://wa.me/${phoneWithCountry}?text=${encodedMessage}`;
+        window.open(whatsappUrl, '_blank');
+    }
 }

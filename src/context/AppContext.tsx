@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useCallback, useEffect } fr
 import { Product, Order, CartItem, OrderStatus, Customer, Category, StoreConfig, ExtraGroup, ExtraOption, OpeningHour, DeliveryFee, PrinterConfig, Reward, CustomerCoupon, Transaction } from '../types';
 import { supabase } from '../lib/supabase';
 import { PrinterService } from '../lib/PrinterService';
+import { WhatsAppService } from '../lib/WhatsAppService';
 
 interface AppContextType {
   products: Product[];
@@ -24,6 +25,7 @@ interface AppContextType {
   updateOrderStatus: (orderId: string, status: OrderStatus) => void;
   updateOrder: (orderId: string, updates: Partial<Order>) => Promise<void>;
   playNotificationSound: () => void;
+  playPaymentReminderSound: () => void;
   stopNotificationSound: () => void;
   deleteOrder: (orderId: string) => Promise<void>;
   addProduct: (product: Omit<Product, 'id'>) => Promise<void>;
@@ -432,6 +434,45 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [audio, setView]);
 
+  const playPaymentReminderSound = useCallback(() => {
+    try {
+      console.log('💰 Playing payment reminder sound...');
+
+      // Play 2 short beeps instead of continuous loop
+      audio.currentTime = 0;
+      audio.play().catch(e => console.warn('Audio play failed:', e));
+
+      setTimeout(() => {
+        audio.pause();
+        audio.currentTime = 0;
+      }, 500); // Stop after 0.5 seconds
+
+      // Second beep
+      setTimeout(() => {
+        audio.currentTime = 0;
+        audio.play().catch(e => console.warn('Audio play failed:', e));
+        setTimeout(() => {
+          audio.pause();
+          audio.currentTime = 0;
+        }, 500);
+      }, 800); // Second beep after 0.8 seconds
+
+      // Browser notification
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('💰 Aguardando Pagamento PIX', {
+          body: 'Pedido criado, aguardando confirmação de pagamento.',
+          icon: '/burger-icon.png',
+          requireInteraction: false // Auto-dismiss
+        }).onclick = () => {
+          window.focus();
+          setView('admin');
+        };
+      }
+    } catch (e) {
+      console.error('Payment reminder notification error:', e);
+    }
+  }, [audio, setView]);
+
   const stopNotificationSound = useCallback(() => { try { audio.pause(); audio.currentTime = 0; } catch (e) { } }, [audio]);
 
   // Play sound continuously while there are PENDING orders
@@ -582,10 +623,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         fetchOrders();
 
         if (p.eventType === 'INSERT') {
-          playNotificationSound();
           const o = p.new as any;
           const mapped: Order = { id: o.id, customerName: o.customer_name, phone: o.phone, address: o.address, total: Number(o.total), paymentMethod: o.payment_method, status: o.status, items: o.items || [], timestamp: new Date(o.created_at), couponUsed: o.coupon_used, rewardTitle: o.reward_title, dailyOrderNumber: o.daily_order_number };
           syncCustomer(mapped);
+
+          // Different handling based on order status
+          if (o.status === OrderStatus.AWAITING_PAYMENT) {
+            // PIX order, not paid yet - different sound and WhatsApp reminder
+            console.log('💰 AWAITING_PAYMENT order detected, sending payment reminder...');
+            playPaymentReminderSound();
+
+            // Send WhatsApp payment reminder
+            WhatsAppService.sendPaymentReminder(mapped, storeConfig?.name);
+          } else {
+            // Regular order (paid PIX or pay on delivery) - normal notification
+            playNotificationSound();
+          }
 
           // ❌ REMOVED: Auto-print on arrival
           // Printing will happen when admin accepts the order (status change to PREPARING)
@@ -703,7 +756,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         ? { ...customerProfile, ...(customers.find(c => c.phone === customerProfile?.phone)) }
         : customerProfile,
       updateCustomerProfile,
-      updateOrderStatus, updateOrder, playNotificationSound, stopNotificationSound,
+      updateOrderStatus, updateOrder, playNotificationSound, playPaymentReminderSound, stopNotificationSound,
       deleteOrder: async (id) => { await supabase.from('orders').delete().eq('id', id); setOrders(p => p.filter(o => o.id !== id)); },
       addProduct: async (p) => {
         const mapped = {
