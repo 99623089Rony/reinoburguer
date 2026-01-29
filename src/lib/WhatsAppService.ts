@@ -1,4 +1,5 @@
 import { Order } from '../types';
+import { supabase } from './supabase';
 
 export class WhatsAppService {
     static formatOrder(order: Order, storeName: string = 'Reino Burguer'): string {
@@ -123,5 +124,49 @@ export class WhatsAppService {
 
         const whatsappUrl = `https://wa.me/${phoneWithCountry}?text=${encodedMessage}`;
         window.open(whatsappUrl, '_blank');
+    }
+
+    static async sendAutomaticPaymentReminder(order: Order, storeName: string = 'Reino Burguer') {
+        try {
+            console.log('🤖 Sending automatic payment reminder via API...');
+            const orderId = order.dailyOrderNumber || order.id.slice(-5).toUpperCase();
+
+            let message = `Olá *${order.customerName}*! 😊\n\n`;
+            message += `Recebemos seu pedido *#${orderId}* no valor de *R$ ${order.total.toFixed(2).replace('.', ',')}*! 🍔\n\n`;
+            message += `Para confirmarmos e enviarmos para a cozinha, precisamos que você finalize o pagamento via *PIX*. 💳\n\n`;
+            message += `Assim que o pagamento for confirmado, seu pedido entrará em preparo imediatamente! ⚡\n\n`;
+            message += `Qualquer dúvida, estamos à disposição!\n\n`;
+            message += `Obrigado pela preferência! ❤️\n`;
+            message += `*${storeName}*`;
+
+            const cleanPhone = order.phone.replace(/\D/g, '');
+            const phoneWithCountry = cleanPhone.length === 11 ? `55${cleanPhone}` : cleanPhone;
+
+            // Call Supabase Edge Function to proxy the message
+            const { data, error } = await supabase.functions.invoke('whatsapp-webhook', {
+                body: {
+                    event: 'proxy',
+                    path: '/message/sendText/default',
+                    method: 'POST',
+                    payload: {
+                        number: `${phoneWithCountry}@s.whatsapp.net`,
+                        text: message,
+                        delay: 1000
+                    }
+                }
+            });
+
+            if (error) {
+                console.error('❌ Error sending automatic reminder:', error);
+                // Fallback to manual link if API fails
+                this.sendPaymentReminder(order, storeName);
+            } else {
+                console.log('✅ Automatic payment reminder sent successfully:', data);
+            }
+        } catch (e) {
+            console.error('❌ Exception in sendAutomaticPaymentReminder:', e);
+            // Fallback
+            this.sendPaymentReminder(order, storeName);
+        }
     }
 }

@@ -436,11 +436,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const playPaymentReminderSound = useCallback(() => {
     console.log('💰 playPaymentReminderSound CALLED!');
-    console.log('   - audio object:', audio);
-    console.log('   - setView function:', setView);
+    console.log('   - view:', view);
+    console.log('   - audioUnlocked:', audioUnlocked);
 
     try {
-      console.log('💰 Playing payment reminder sound...');
+      // Only play if in admin view and audio is unlocked
+      if (view !== 'admin' || !audioUnlocked) {
+        console.warn('⚠️ Skipping payment reminder sound (view not admin or audio locked)');
+        return;
+      }
+
+      console.log('💰 Playing payment reminder sound (Double Beep)...');
 
       // Play 2 short beeps instead of continuous loop
       audio.currentTime = 0;
@@ -459,7 +465,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           audio.pause();
           audio.currentTime = 0;
         }, 500);
-      }, 800); // Second beep after 0.8 seconds
+      }, 1000); // Second beep after 1 second
 
       // Browser notification
       if ('Notification' in window && Notification.permission === 'granted') {
@@ -478,7 +484,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } catch (e) {
       console.error('Payment reminder notification error:', e);
     }
-  }, [audio, setView]);
+  }, [audio, setView, view, audioUnlocked]);
 
   const stopNotificationSound = useCallback(() => { try { audio.pause(); audio.currentTime = 0; } catch (e) { } }, [audio]);
 
@@ -644,8 +650,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             console.log('💰 AWAITING_PAYMENT order detected, sending payment reminder...');
             playPaymentReminderSound();
 
-            // Send WhatsApp payment reminder
-            WhatsAppService.sendPaymentReminder(mapped, storeConfig?.name);
+            // Send WhatsApp payment reminder via API (Backend)
+            WhatsAppService.sendAutomaticPaymentReminder(mapped, storeConfig?.name);
           } else {
             // Regular order (paid PIX or pay on delivery) - normal notification
             console.log('🔔 Regular order detected, playing normal notification');
