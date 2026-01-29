@@ -1,14 +1,44 @@
 import { Order } from '../types';
 
+interface QueueItem {
+    order: Order;
+    paperSize: '58mm' | '80mm';
+    attempts: number;
+    addedAt: string;
+}
+
+interface QueueStatus {
+    pending: number;
+    processing: boolean;
+    lastError: string | null;
+}
+
 export class PrinterService {
     private static port: any | null = null;
     private static writer: any | null = null;
     private static btDevice: any | null = null;
     private static btCharacteristic: any | null = null;
 
+    // Queue management
+    private static printQueue: QueueItem[] = [];
+    private static isProcessing: boolean = false;
+    private static queueListeners: ((status: QueueStatus) => void)[] = [];
+    private static lastConnectionType: 'usb' | 'bluetooth' | null = null;
+    private static readonly STORAGE_KEY = 'reino_burguer_print_queue';
+    private static readonly MAX_RETRY_ATTEMPTS = 3;
+    private static readonly RETRY_DELAY_MS = 5000;
+
     static async connect(type: 'usb' | 'bluetooth' = 'usb') {
-        if (type === 'usb') return this.connectUSB();
-        return this.connectBluetooth();
+        const success = type === 'usb' ? await this.connectUSB() : await this.connectBluetooth();
+        if (success) {
+            this.lastConnectionType = type;
+            // Start processing queue if there are pending items
+            if (this.printQueue.length > 0) {
+                console.log('🔄 Connection established, processing pending queue...');
+                this.processQueue();
+            }
+        }
+        return success;
     }
 
     private static async connectUSB() {
@@ -250,5 +280,196 @@ export class PrinterService {
         if (leftLen < 1) return left + ' ' + right; // Overflow fallback
 
         return left.substring(0, leftLen).padEnd(leftLen) + ' ' + right;
+    }
+
+    // ============ QUEUE MANAGEMENT SYSTEM ============
+
+    /**
+     * Add order to print queue
+     */
+    static addToQueue(order: Order, paperSize: '58mm' | '80mm' = '58mm') {
+        console.log('📄 Adding order to print queue:', order.id);
+
+        // Check for duplicates - prevent adding same order twice
+        const isDuplicate = this.printQueue.some(item => item.order.id === order.id);
+        if (isDuplicate) {
+            console.warn('⚠️ Order already in queue, skipping duplicate:', order.id);
+            return;
+        }
+
+        const queueItem: QueueItem = {
+            order,
+            paperSize,
+            attempts: 0,
+            addedAt: new Date().toISOString()
+        };
+
+        this.printQueue.push(queueItem);
+        this.saveQueueToStorage();
+        this.notifyListeners();
+
+        // Start processing if not already running
+        if (!this.isProcessing) {
+            this.processQueue();
+        }
+    }
+
+    /**
+     * Process print queue sequentially
+     */
+    private static async processQueue() {
+        if (this.isProcessing || this.printQueue.length === 0) {
+            return;
+        }
+
+        this.isProcessing = true;
+        this.notifyListeners();
+
+        while (this.printQueue.length > 0) {
+            const item = this.printQueue[0];
+            console.log(`🖨️ Processing queue item (${item.attempts + 1}/${this.MAX_RETRY_ATTEMPTS}):`, item.order.id);
+
+            // Check if connected
+            if (!this.isConnected()) {
+                const orderNum = item.order.dailyOrderNumber || item.order.id.slice(-5).toUpperCase();
+                console.warn(`⚠️ Printer not connected for order #${orderNum}. Attempting auto-reconnect...`);
+
+                // Try to reconnect using last known type
+                if (this.lastConnectionType) {
+                    const reconnected = await this.connect(this.lastConnectionType);
+                    if (!reconnected) {
+                        console.error(`❌ Auto-reconnect failed for order #${orderNum}. Queue paused.`);
+                        this.notifyListeners(`Impressora desconectada. Conecte para imprimir pedido #${orderNum}`);
+                        break; // Stop processing, wait for manual connection
+                    }
+                } else {
+                    console.error(`❌ No previous connection type for order #${orderNum}. Queue paused.`);
+                    this.notifyListeners(`Conecte a impressora para imprimir pedido #${orderNum}`);
+                    break;
+                }
+            }
+
+            // Try to print
+            const success = await this.printOrder(item.order, item.paperSize);
+
+            if (success) {
+                console.log('✅ Print successful, removing from queue:', item.order.id);
+                this.printQueue.shift(); // Remove from queue
+                this.saveQueueToStorage();
+                this.notifyListeners();
+            } else {
+                item.attempts++;
+                console.warn(`⚠️ Print failed (attempt ${item.attempts}/${this.MAX_RETRY_ATTEMPTS})`);
+
+                if (item.attempts >= this.MAX_RETRY_ATTEMPTS) {
+                    console.error('❌ Max retry attempts reached. Removing from queue:', item.order.id);
+                    this.printQueue.shift(); // Remove failed item
+                    this.saveQueueToStorage();
+                    this.notifyListeners(`Falha ao imprimir pedido #${item.order.dailyOrderNumber || item.order.id.slice(-5)}`);
+                } else {
+                    // Wait before retry
+                    console.log(`⏳ Waiting ${this.RETRY_DELAY_MS}ms before retry...`);
+                    await new Promise(resolve => setTimeout(resolve, this.RETRY_DELAY_MS));
+                    this.notifyListeners();
+                }
+            }
+        }
+
+        this.isProcessing = false;
+        this.notifyListeners();
+        console.log('✅ Queue processing complete');
+    }
+
+    /**
+     * Load queue from localStorage
+     */
+    static loadQueueFromStorage() {
+        try {
+            const stored = localStorage.getItem(this.STORAGE_KEY);
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                this.printQueue = parsed.queue || [];
+                console.log(`📦 Loaded ${this.printQueue.length} items from storage`);
+
+                // Auto-start processing if there are items and we're connected
+                if (this.printQueue.length > 0 && this.isConnected()) {
+                    console.log('🔄 Auto-starting queue processing...');
+                    this.processQueue();
+                }
+            }
+        } catch (error) {
+            console.error('❌ Error loading queue from storage:', error);
+            this.printQueue = [];
+        }
+    }
+
+    /**
+     * Save queue to localStorage
+     */
+    private static saveQueueToStorage() {
+        try {
+            localStorage.setItem(this.STORAGE_KEY, JSON.stringify({
+                queue: this.printQueue,
+                lastUpdated: new Date().toISOString()
+            }));
+        } catch (error) {
+            console.error('❌ Error saving queue to storage:', error);
+        }
+    }
+
+    /**
+     * Clear entire queue
+     */
+    static clearQueue() {
+        console.log('🗑️ Clearing print queue');
+        this.printQueue = [];
+        this.saveQueueToStorage();
+        this.notifyListeners();
+    }
+
+    /**
+     * Get current queue status
+     */
+    static getQueueStatus(): QueueStatus {
+        return {
+            pending: this.printQueue.length,
+            processing: this.isProcessing,
+            lastError: null
+        };
+    }
+
+    /**
+     * Get queue items for display
+     */
+    static getQueueItems(): QueueItem[] {
+        return [...this.printQueue]; // Return copy to prevent external modification
+    }
+
+    /**
+     * Register listener for queue changes
+     */
+    static onQueueChange(callback: (status: QueueStatus) => void) {
+        this.queueListeners.push(callback);
+        // Immediately notify with current status
+        callback(this.getQueueStatus());
+    }
+
+    /**
+     * Remove listener
+     */
+    static offQueueChange(callback: (status: QueueStatus) => void) {
+        this.queueListeners = this.queueListeners.filter(cb => cb !== callback);
+    }
+
+    /**
+     * Notify all listeners of queue changes
+     */
+    private static notifyListeners(errorMessage: string | null = null) {
+        const status: QueueStatus = {
+            pending: this.printQueue.length,
+            processing: this.isProcessing,
+            lastError: errorMessage
+        };
+        this.queueListeners.forEach(callback => callback(status));
     }
 }

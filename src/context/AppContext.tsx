@@ -580,7 +580,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           const o = p.new as any;
           const mapped: Order = { id: o.id, customerName: o.customer_name, phone: o.phone, address: o.address, total: Number(o.total), paymentMethod: o.payment_method, status: o.status, items: o.items || [], timestamp: new Date(o.created_at), couponUsed: o.coupon_used, rewardTitle: o.reward_title, dailyOrderNumber: o.daily_order_number };
           syncCustomer(mapped);
-          if (storeConfig?.printerSettings?.autoPrint) PrinterService.printOrder(mapped, storeConfig.printerSettings.paperSize);
+
+          // Add to print queue instead of printing directly
+          if (storeConfig?.printerSettings?.autoPrint) {
+            console.log('📄 New order received, adding to print queue:', mapped.id);
+            PrinterService.addToQueue(mapped, storeConfig.printerSettings.paperSize);
+          }
         } else if (p.eventType === 'UPDATE') {
           const o = p.new as any;
 
@@ -588,7 +593,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           if (o.status === OrderStatus.PENDING) {
             playNotificationSound();
             const mapped: Order = { id: o.id, customerName: o.customer_name, phone: o.phone, address: o.address, total: Number(o.total), paymentMethod: o.payment_method, status: o.status, items: o.items || [], timestamp: new Date(o.created_at), couponUsed: o.coupon_used, rewardTitle: o.reward_title, dailyOrderNumber: o.daily_order_number };
-            if (storeConfig?.printerSettings?.autoPrint) PrinterService.printOrder(mapped, storeConfig.printerSettings.paperSize);
+
+            // Add to print queue instead of printing directly
+            if (storeConfig?.printerSettings?.autoPrint) {
+              console.log('📄 Order became PENDING, adding to print queue:', mapped.id);
+              PrinterService.addToQueue(mapped, storeConfig.printerSettings.paperSize);
+            }
           }
 
           if (o.status === OrderStatus.FINISHED) {
@@ -617,7 +627,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       supabase.removeChannel(channel);
       clearInterval(interval);
     };
-  }, [fetchProducts, fetchOrders, fetchCategories, fetchStoreConfig, fetchCustomers, playNotificationSound, syncCustomer]);
+  }, [fetchProducts, fetchOrders, fetchCategories, fetchStoreConfig, fetchCustomers, playNotificationSound, syncCustomer, storeConfig]);
 
   const resetRanking = useCallback(async () => {
     // 1. Get the #1 customer

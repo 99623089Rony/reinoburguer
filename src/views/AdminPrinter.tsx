@@ -20,11 +20,46 @@ export const AdminPrinter: React.FC = () => {
         }
     );
 
+    const [queueStatus, setQueueStatus] = useState({ pending: 0, processing: false, lastError: null as string | null });
+    const [queueItems, setQueueItems] = useState<any[]>([]);
+
     useEffect(() => {
         if (PrinterService.isConnected()) {
             setConnectedType(config.type as any);
         }
     }, [config.type]);
+
+    // Queue management and auto-reconnection
+    useEffect(() => {
+        // Load queue from storage on mount
+        PrinterService.loadQueueFromStorage();
+
+        // Listen for queue changes
+        const handleQueueChange = (status: any) => {
+            setQueueStatus(status);
+            // Also update queue items for display
+            setQueueItems(PrinterService.getQueueItems());
+        };
+        PrinterService.onQueueChange(handleQueueChange);
+
+        // Auto-reconnect if autoPrint is enabled and there are pending items
+        const autoReconnect = async () => {
+            if (storeConfig?.printerSettings?.autoPrint && !PrinterService.isConnected()) {
+                const type = storeConfig.printerSettings.type as 'usb' | 'bluetooth';
+                console.log('🔄 Auto-reconnecting printer on mount...', type);
+                const success = await PrinterService.connect(type);
+                if (success) {
+                    setConnectedType(type);
+                    console.log('✅ Auto-reconnection successful');
+                }
+            }
+        };
+        autoReconnect();
+
+        return () => {
+            PrinterService.offQueueChange(handleQueueChange);
+        };
+    }, [storeConfig?.printerSettings]);
 
     const handleConnect = async (type: 'usb' | 'bluetooth') => {
         setLoading(true);
@@ -203,7 +238,77 @@ export const AdminPrinter: React.FC = () => {
                 </div>
             </div>
 
+            {/* Queue Status Card */}
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-4 shadow-xl">
+                <h2 className="text-sm font-black text-slate-400 uppercase tracking-widest">Fila de Impressão</h2>
+
+                {queueStatus.pending > 0 ? (
+                    <>
+                        <div className="flex items-center justify-between p-4 bg-slate-950/30 rounded-2xl border border-slate-800">
+                            <span className="text-white font-bold">Pedidos na fila:</span>
+                            <span className="bg-orange-600 text-white px-4 py-2 rounded-full font-black text-lg">
+                                {queueStatus.pending}
+                            </span>
+                        </div>
+
+                        {queueStatus.processing && (
+                            <div className="flex items-center gap-2 text-blue-400 p-3 bg-blue-500/5 rounded-xl border border-blue-500/10">
+                                <RefreshCcw className="animate-spin" size={16} />
+                                <span className="text-sm font-bold">Imprimindo...</span>
+                            </div>
+                        )}
+
+                        {/* Queue Items List */}
+                        <div className="space-y-2 max-h-64 overflow-y-auto">
+                            {queueItems.map((item, idx) => {
+                                const orderNum = item.order.dailyOrderNumber || item.order.id.slice(-5).toUpperCase();
+                                return (
+                                    <div key={item.order.id} className="p-3 bg-slate-950/50 rounded-xl border border-slate-800/50 flex items-center justify-between">
+                                        <div className="flex-1">
+                                            <p className="text-white text-sm font-bold">#{orderNum}</p>
+                                            <p className="text-slate-400 text-xs">{item.order.customerName}</p>
+                                            {item.attempts > 0 && (
+                                                <p className="text-yellow-400 text-xs mt-1">
+                                                    ⚠️ Tentativa {item.attempts}/3
+                                                </p>
+                                            )}
+                                        </div>
+                                        <div className="text-right">
+                                            <span className={`text-xs px-2 py-1 rounded-full ${idx === 0 && queueStatus.processing ? 'bg-blue-500/20 text-blue-400' : 'bg-slate-700 text-slate-400'}`}>
+                                                {idx === 0 && queueStatus.processing ? 'Imprimindo' : `#${idx + 1} na fila`}
+                                            </span>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        <button
+                            onClick={() => {
+                                if (confirm('Deseja realmente limpar toda a fila de impressão?')) {
+                                    PrinterService.clearQueue();
+                                }
+                            }}
+                            className="w-full py-3 bg-red-600/10 border border-red-600 text-red-400 rounded-2xl font-bold hover:bg-red-600/20 transition-all"
+                        >
+                            Limpar Fila
+                        </button>
+                    </>
+                ) : (
+                    <div className="p-6 bg-slate-950/30 rounded-2xl border border-slate-800/50 border-dashed text-center">
+                        <p className="text-slate-500 text-sm">✅ Nenhum pedido na fila</p>
+                    </div>
+                )}
+
+                {queueStatus.lastError && (
+                    <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-2xl">
+                        <p className="text-red-400 text-xs font-bold">⚠️ {queueStatus.lastError}</p>
+                    </div>
+                )}
+            </div>
+
             <div className="bg-blue-500/5 border border-blue-500/10 p-6 rounded-3xl space-y-3">
+
                 <h3 className="text-blue-400 text-sm font-bold flex items-center gap-2">
                     <AlertCircle size={16} /> Dica de Uso
                 </h3>
