@@ -496,8 +496,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const order = orders.find(o => o.id === orderId);
     if (!order) return;
 
-    // ✅ NEW: Auto-print when accepting order (status changes to DELIVERING)
-    if (status === OrderStatus.DELIVERING && storeConfig?.printerSettings?.autoPrint) {
+    // ✅ NEW: Auto-print when accepting order (status changes to PREPARING)
+    if (status === OrderStatus.PREPARING && storeConfig?.printerSettings?.autoPrint) {
       console.log('🖨️ Order accepted! Adding to print queue:', order.id);
       PrinterService.addToQueue(order, storeConfig.printerSettings.paperSize);
     }
@@ -588,7 +588,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           syncCustomer(mapped);
 
           // ❌ REMOVED: Auto-print on arrival
-          // Printing will happen when admin accepts the order (status change to DELIVERING)
+          // Printing will happen when admin accepts the order (status change to PREPARING)
         } else if (p.eventType === 'UPDATE') {
           const o = p.new as any;
 
